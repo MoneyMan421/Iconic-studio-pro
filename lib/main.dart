@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
@@ -170,11 +169,11 @@ class _StudioPageState extends State<StudioPage> {
       final normalizedPath = selectedPath.toLowerCase().endsWith('.png')
           ? selectedPath
           : '$selectedPath.png';
-      final bytes = Uint8List.fromList(byteData.buffer.asUint8List());
-      await File(normalizedPath).writeAsBytes(bytes);
+      await File(normalizedPath).writeAsBytes(byteData.buffer.asUint8List());
 
       _showMessage('Icon exported to $normalizedPath');
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Export failed: $error');
       _showMessage('Export failed. Please try again.');
     }
   }
