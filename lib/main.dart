@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -99,6 +101,7 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  final GlobalKey _previewBoundaryKey = GlobalKey();
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -125,6 +128,62 @@ class _StudioPageState extends State<StudioPage> {
       barrierDismissible: false,
       builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
     );
+  }
+
+  Future<void> _exportIcon() async {
+    if (state.userImage == null) {
+      _showMessage('Upload an icon before exporting.');
+      return;
+    }
+
+    final boundaryContext = _previewBoundaryKey.currentContext;
+    if (boundaryContext == null) {
+      _showMessage('Preview is not ready yet.');
+      return;
+    }
+
+    try {
+      final boundary = boundaryContext.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showMessage('Could not capture preview.');
+        return;
+      }
+
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showMessage('Could not generate image data.');
+        return;
+      }
+
+      final selectedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save exported icon',
+        fileName: 'iconic_export.png',
+        type: FileType.custom,
+        allowedExtensions: ['png'],
+      );
+
+      if (selectedPath == null) {
+        return;
+      }
+
+      final normalizedPath = selectedPath.toLowerCase().endsWith('.png')
+          ? selectedPath
+          : '$selectedPath.png';
+      final bytes = Uint8List.fromList(byteData.buffer.asUint8List());
+      await File(normalizedPath).writeAsBytes(bytes);
+
+      _showMessage('Icon exported to $normalizedPath');
+    } catch (_) {
+      _showMessage('Export failed. Please try again.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -171,7 +230,14 @@ class _StudioPageState extends State<StudioPage> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: Center(child: PreviewCanvas(state: state))),
+                Expanded(
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _previewBoundaryKey,
+                      child: PreviewCanvas(state: state),
+                    ),
+                  ),
+                ),
                 _buildStatsBar(),
               ],
             ),
@@ -263,7 +329,7 @@ class _StudioPageState extends State<StudioPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _exportIcon,
               icon: const Icon(Icons.download, size: 18),
               label: const Text('Export Icon', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
