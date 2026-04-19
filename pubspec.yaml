@@ -1,0 +1,21 @@
+name: iconic_studio_pro
+description: Premium icon editor with diamond refraction shaders
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_shaders: ^0.1.2
+  image_picker: ^1.0.7
+  file_picker: ^6.1.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+  shaders:
+    - shaders/diamond_master.frag
