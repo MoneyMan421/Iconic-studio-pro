@@ -69,6 +69,13 @@ void main() {
       expect(find.text('PRO'), findsOneWidget);
     });
 
+    testWidgets('header badge shows Free by default', (tester) async {
+      await tester.pumpWidget(const IconStudioPro());
+      // Default state is unpaid; badge should say Free, not Pro.
+      expect(find.text('Free'), findsOneWidget);
+      expect(find.text('Pro'),  findsNothing);
+    });
+
     testWidgets('shows Export Icon button', (tester) async {
       await tester.pumpWidget(const IconStudioPro());
       expect(find.text('Export Icon'), findsOneWidget);

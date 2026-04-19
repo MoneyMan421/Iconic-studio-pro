@@ -720,9 +720,9 @@ class PreviewCanvas extends StatelessWidget {
     shader.setFloat(7,  state.contrast         / 100.0);
     shader.setFloat(8,  state.saturation       / 100.0);
     shader.setFloat(9,  state.blur             / 20.0);
-    shader.setFloat(10, 0.3);   // uLightPosition.x
-    shader.setFloat(11, 0.5);   // uLightPosition.y
-    shader.setFloat(12, 0.8);   // uLightPosition.z
+    shader.setFloat(10, 0.3);   // uLightPosition.x  (upper-right light source)
+    shader.setFloat(11, -0.5);  // uLightPosition.y  (negative = above in screen-space Y-down)
+    shader.setFloat(12, 0.5);   // uLightPosition.z
     // Note: setImageSampler(0, image) is called by the AnimatedSampler callback.
   }
 
