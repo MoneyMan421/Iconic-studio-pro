@@ -166,7 +166,8 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      final normalizedPath = selectedPath.toLowerCase().endsWith('.png')
+      final hasPngExtension = RegExp(r'\.png$', caseSensitive: false).hasMatch(selectedPath);
+      final normalizedPath = hasPngExtension
           ? selectedPath
           : '$selectedPath.png';
       await File(normalizedPath).writeAsBytes(byteData.buffer.asUint8List());
@@ -180,9 +181,7 @@ class _StudioPageState extends State<StudioPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
