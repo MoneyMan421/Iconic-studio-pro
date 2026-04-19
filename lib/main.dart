@@ -100,6 +100,8 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  static const double exportPixelRatio = 3.0;
+  static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
   Future<void> _pickImage() async {
@@ -148,7 +150,7 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      final image = await boundary.toImage(pixelRatio: 3);
+      final image = await boundary.toImage(pixelRatio: exportPixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
         _showMessage('Could not generate image data.');
@@ -166,7 +168,7 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      final hasPngExtension = RegExp(r'\.png$', caseSensitive: false).hasMatch(selectedPath);
+      final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
       final normalizedPath = hasPngExtension
           ? selectedPath
           : '$selectedPath.png';
