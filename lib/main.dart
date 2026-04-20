@@ -175,8 +175,9 @@ class _StudioPageState extends State<StudioPage> {
       await File(normalizedPath).writeAsBytes(byteData.buffer.asUint8List());
 
       _showMessage('Icon exported to $normalizedPath');
-    } catch (error) {
+    } catch (error, stackTrace) {
       debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       _showMessage('Export failed. Please try again.');
     }
   }
