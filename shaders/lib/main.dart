@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -99,6 +100,7 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  final GlobalKey _previewKey = GlobalKey();
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -125,6 +127,48 @@ class _StudioPageState extends State<StudioPage> {
       barrierDismissible: false,
       builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
     );
+  }
+
+  Future<void> _exportPng() async {
+    try {
+      final boundary = _previewKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showSnackBar('Preview not ready');
+        return;
+      }
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+
+      if (byteData == null) throw StateError('Encoding returned null');
+
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Icon',
+        fileName: 'icon_export.png',
+      );
+
+      if (result != null) {
+        await File(result).writeAsBytes(byteData.buffer.asUint8List());
+        _showSnackBar('Icon exported successfully');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'studio',
+        context: ErrorDescription('Icon export failed'),
+      ));
+      _showSnackBar('Export failed: $error');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -171,7 +215,14 @@ class _StudioPageState extends State<StudioPage> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: Center(child: PreviewCanvas(state: state))),
+                Expanded(
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _previewKey,
+                      child: PreviewCanvas(state: state),
+                    ),
+                  ),
+                ),
                 _buildStatsBar(),
               ],
             ),
@@ -263,7 +314,7 @@ class _StudioPageState extends State<StudioPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _exportPng,
               icon: const Icon(Icons.download, size: 18),
               label: const Text('Export Icon', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
