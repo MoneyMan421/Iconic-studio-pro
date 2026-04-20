@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
@@ -98,7 +99,63 @@ const _kImportsUsed      = 'importsUsed';
 // Entry point
 // ---------------------------------------------------------------------------
 
-void main() => runApp(const IconStudioPro());
+void main() {
+  // Global error handling — surfaces caught Flutter errors to logs and the
+  // framework's default presentation handler.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exception}');
+    debugPrintStack(stackTrace: details.stack);
+  };
+
+  runApp(const DiamondApp());
+}
+
+// ---------------------------------------------------------------------------
+// DiamondApp — multi-route application root
+// ---------------------------------------------------------------------------
+
+class DiamondApp extends StatelessWidget {
+  const DiamondApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Iconic Studio Pro',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0a0a0a),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00d4ff),
+          brightness: Brightness.dark,
+        ),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/':            (context) => const HomePage(),
+        '/marketplace': (context) => const MarketplacePage(),
+        '/studio':      (context) => const StudioPage(),
+        '/dashboard':   (context) => const DashboardPage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name?.startsWith('/product/') ?? false) {
+          final id = settings.name!.split('/').last;
+          return MaterialPageRoute(
+            builder: (_) => ProductDetailPage(id: id),
+          );
+        }
+        return null;
+      },
+      onUnknownRoute: (_) => MaterialPageRoute(
+        builder: (_) => const NotFoundPage(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// IconStudioPro — legacy single-page shell kept for test compatibility
+// ---------------------------------------------------------------------------
 
 class IconStudioPro extends StatelessWidget {
   const IconStudioPro({super.key});
@@ -118,13 +175,140 @@ class IconStudioPro extends StatelessWidget {
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
       ),
-      home: const StudioPage(),
+      home: const IconEditorPage(),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Main page
+// Pages
+// ---------------------------------------------------------------------------
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ShaderBackground(
+        shaderAsset: 'shaders/diamond_master.frag',
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Iconic Studio Pro',
+                style: TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w200,
+                  letterSpacing: -1,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 32),
+              _NavButton(
+                label: 'Marketplace',
+                onPressed: () => Navigator.pushNamed(context, '/marketplace'),
+              ),
+              _NavButton(
+                label: 'Studio',
+                onPressed: () => Navigator.pushNamed(context, '/studio'),
+              ),
+              _NavButton(
+                label: 'Dashboard',
+                onPressed: () => Navigator.pushNamed(context, '/dashboard'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MarketplacePage extends StatefulWidget {
+  const MarketplacePage({super.key});
+
+  @override
+  State<MarketplacePage> createState() => _MarketplacePageState();
+}
+
+class _MarketplacePageState extends State<MarketplacePage> {
+  final List<Map<String, dynamic>> _products = [
+    {'id': 'diamond-01', 'name': 'Prismatic Diamond', 'price': 2.5},
+    {'id': 'diamond-02', 'name': 'Neon Cutter',       'price': 1.8},
+    {'id': 'diamond-03', 'name': 'Crystal Matrix',    'price': 3.2},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Marketplace')),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _products.length,
+        itemBuilder: (context, index) {
+          final product = _products[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: const Icon(
+                Icons.diamond_outlined,
+                color: Color(0xFF00d4ff),
+              ),
+              title:    Text(product['name'] as String),
+              subtitle: Text('${product['price']} ETH'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () => Navigator.pushNamed(
+                context,
+                '/product/${product['id']}',
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetailPage extends StatelessWidget {
+  final String id;
+  const ProductDetailPage({super.key, required this.id});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Product $id')),
+      body: Center(
+        child: Hero(
+          tag: 'product-$id',
+          child: ShaderBackground(
+            shaderAsset: 'shaders/diamond_master.frag',
+            child: Container(
+              width:  300,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFF00d4ff).withOpacity(0.3),
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  'Live Preview',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// StudioPage — shader file editor
 // ---------------------------------------------------------------------------
 
 class StudioPage extends StatefulWidget {
@@ -134,7 +318,298 @@ class StudioPage extends StatefulWidget {
   State<StudioPage> createState() => _StudioPageState();
 }
 
-class _StudioPageState extends State<StudioPage> with WidgetsBindingObserver {
+class _StudioPageState extends State<StudioPage> {
+  String? _shaderSource;
+  bool    _isLoading = false;
+
+  final GlobalKey _previewKey = GlobalKey();
+
+  // -------------------------------------------------------------------------
+  // Shader file operations
+  // -------------------------------------------------------------------------
+
+  Future<void> _pickShaderFile() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type:          FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file   = File(result.files.single.path!);
+        final source = await file.readAsString();
+        setState(() => _shaderSource = source);
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Shader load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack:     stackTrace,
+          library:   'studio',
+          context:   ErrorDescription('Shader file load failed'),
+        ),
+      );
+      _showSnackBar('Load failed: $error');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _exportPng() async {
+    try {
+      final boundary = _previewKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showSnackBar('Preview not ready');
+        return;
+      }
+
+      final image    = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+
+      if (byteData == null) {
+        throw StateError('Image encoding returned null');
+      }
+
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Icon',
+        fileName:    'icon_export.png',
+      );
+
+      if (result != null) {
+        await File(result).writeAsBytes(byteData.buffer.asUint8List());
+        _showSnackBar('Icon exported successfully');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('PNG export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack:     stackTrace,
+          library:   'studio',
+          context:   ErrorDescription('Icon export failed'),
+        ),
+      );
+      _showSnackBar('Export failed: $error');
+    }
+  }
+
+  Future<void> _exportShader() async {
+    try {
+      if (_shaderSource == null) {
+        _showSnackBar('No shader loaded');
+        return;
+      }
+
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Shader',
+        fileName:    'diamond_master.frag',
+      );
+
+      if (result != null) {
+        await File(result).writeAsString(_shaderSource!);
+        _showSnackBar('Shader exported successfully');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack:     stackTrace,
+          library:   'studio',
+          context:   ErrorDescription('Shader export failed'),
+        ),
+      );
+      _showSnackBar('Export failed: $error');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Build
+  // -------------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Studio'),
+        actions: [
+          IconButton(
+            icon:    const Icon(Icons.folder_open),
+            tooltip: 'Load shader',
+            onPressed: _isLoading ? null : _pickShaderFile,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Preview area
+          Expanded(
+            child: Center(
+              child: RepaintBoundary(
+                key: _previewKey,
+                child: _shaderSource != null
+                    ? ShaderBackground(
+                        shaderAsset: 'shaders/diamond_master.frag',
+                        child: const SizedBox(width: 300, height: 300),
+                      )
+                    : const Text(
+                        'Load a shader file to preview',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+              ),
+            ),
+          ),
+          // Shader source viewer
+          if (_shaderSource != null)
+            Container(
+              height:  200,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color:  Color(0xFF1A1A1A),
+                border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  _shaderSource!,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize:   12,
+                    color:      Color(0xFF00d4ff),
+                  ),
+                ),
+              ),
+            ),
+          // Action bar
+          Container(
+            padding:    const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _pickShaderFile,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.folder_open),
+                    label: Text(_isLoading ? 'Loading…' : 'Load Shader'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _shaderSource != null ? _exportPng : null,
+                    icon:  const Icon(Icons.image),
+                    label: const Text('Export PNG'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _shaderSource != null ? _exportShader : null,
+                    icon:  const Icon(Icons.code),
+                    label: const Text('Export Shader'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DashboardPage
+// ---------------------------------------------------------------------------
+
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Dashboard')),
+      body: const Center(
+        child: Text(
+          'Dashboard',
+          style: TextStyle(color: Colors.white54, fontSize: 24),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// NotFoundPage
+// ---------------------------------------------------------------------------
+
+class NotFoundPage extends StatelessWidget {
+  const NotFoundPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Not Found')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.white30),
+            const SizedBox(height: 16),
+            const Text(
+              '404 – Page not found',
+              style: TextStyle(color: Colors.white54, fontSize: 20),
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context, '/', (_) => false,
+              ),
+              child: const Text('Go home'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// IconEditorPage — full diamond-shader icon editor (formerly StudioPage)
+// ---------------------------------------------------------------------------
+
+class IconEditorPage extends StatefulWidget {
+  const IconEditorPage({super.key});
+
+  @override
+  State<IconEditorPage> createState() => _IconEditorPageState();
+}
+
+class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObserver {
   EditorState state          = const EditorState();
   int         importsUsed    = 0;
   bool        isPro          = false;
@@ -919,6 +1394,69 @@ class PaywallModal extends StatelessWidget {
             ),
           )),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ShaderBackground — decorative gradient background referencing the shader asset
+// ---------------------------------------------------------------------------
+
+class ShaderBackground extends StatelessWidget {
+  /// Path to the shader asset (retained for future live-shader integration).
+  final String shaderAsset;
+  final Widget child;
+
+  const ShaderBackground({
+    super.key,
+    required this.shaderAsset,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin:  Alignment.topLeft,
+          end:    Alignment.bottomRight,
+          colors: [Color(0xFF0a0a0a), Color(0xFF0d1b2a), Color(0xFF0a0a0a)],
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _NavButton — styled navigation button used on HomePage
+// ---------------------------------------------------------------------------
+
+class _NavButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const _NavButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SizedBox(
+        width:  220,
+        height: 48,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Color(0xFF00d4ff), width: 1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(label, style: const TextStyle(fontSize: 15)),
+        ),
       ),
     );
   }

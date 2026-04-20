@@ -52,6 +52,25 @@ void main() {
     });
   });
 
+  group('DiamondApp', () {
+    testWidgets('renders without crashing', (tester) async {
+      await tester.pumpWidget(const DiamondApp());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('shows Iconic Studio Pro title on home page', (tester) async {
+      await tester.pumpWidget(const DiamondApp());
+      expect(find.text('Iconic Studio Pro'), findsOneWidget);
+    });
+
+    testWidgets('shows navigation buttons on home page', (tester) async {
+      await tester.pumpWidget(const DiamondApp());
+      expect(find.text('Marketplace'), findsOneWidget);
+      expect(find.text('Studio'),      findsOneWidget);
+      expect(find.text('Dashboard'),   findsOneWidget);
+    });
+  });
+
   group('IconStudioPro app', () {
     testWidgets('renders without crashing', (tester) async {
       await tester.pumpWidget(const IconStudioPro());
