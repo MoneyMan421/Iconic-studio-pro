@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elite Diamond Msg — WebGL Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      color: #fff;
+    }
+    h1 { font-size: 14px; letter-spacing: 2px; color: #D4AF37; margin-bottom: 24px; }
+    #stage {
+      position: relative;
+      width: 320px; height: 320px;
+    }
+    /* background particle canvas sits underneath */
+    #bg {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+    }
+    /* main diamond icon canvas sits on top */
+    #preview {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      box-shadow: 0 0 60px 10px rgba(212,175,55,0.18);
+    }
+    #controls {
+      margin-top: 28px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px;
+      width: 320px;
+    }
+    label { font-size: 11px; color: #888; display: flex; flex-direction: column; gap: 4px; }
+    input[type=range] { accent-color: #D4AF37; width: 100%; }
+    span { color: #D4AF37; font-size: 11px; font-weight: 600; }
+  </style>
+</head>
+<body>
+<h1>ELITE DIAMOND MSG — LIVE PREVIEW</h1>
+<div id="stage">
+  <canvas id="bg"      width="320" height="320"></canvas>
+  <canvas id="preview" width="320" height="320"></canvas>
+</div>
+
+<div id="controls">
+  <label>Refraction <span id="vRef">2.42</span>
+    <input type="range" id="sRef" min="1" max="3" step="0.01" value="2.42" />
+  </label>
+  <label>Sparkle <span id="vSpk">0.80</span>
+    <input type="range" id="sSpk" min="0" max="2" step="0.01" value="0.8" />
+  </label>
+  <label>Facet Depth <span id="vFac">0.60</span>
+    <input type="range" id="sFac" min="0" max="1" step="0.01" value="0.6" />
+  </label>
+  <label>Dispersion <span id="vDis">0.020</span>
+    <input type="range" id="sDis" min="0" max="0.1" step="0.001" value="0.02" />
+  </label>
+  <label>Bevel Depth <span id="vBev">12.0</span>
+    <input type="range" id="sBev" min="0" max="20" step="0.5" value="12" />
+  </label>
+  <label>Stone Count <span id="vSto">64</span>
+    <input type="range" id="sSto" min="0" max="64" step="1" value="64" />
+  </label>
+</div>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Utility: compile + link a WebGL 2 program
+// ---------------------------------------------------------------------------
+function createProgram(gl, vsrc, fsrc) {
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+      throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER,   vsrc));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsrc));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(prog));
+  return prog;
+}
+
+// ---------------------------------------------------------------------------
+// Shared vertex shader (fullscreen quad)
+// ---------------------------------------------------------------------------
+const VERT_SRC = `#version 300 es
+in  vec2 aPos;
+out vec2 vUV;
+void main() {
+  vUV         = aPos * 0.5 + 0.5;
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}`;
+
+// ---------------------------------------------------------------------------
+// Main diamond-icon fragment shader (WebGL 2 / GLSL ES 300)
+// ---------------------------------------------------------------------------
+const FRAG_ICON = `#version 300 es
+precision highp float;
+
+uniform vec2  uResolution;
+uniform float uTime;
+uniform float uRefraction;
+uniform float uSparkle;
+uniform float uFacetDepth;
+uniform float uDispersion;
+uniform float uBevelDepth;
+uniform float uStoneCount;
+uniform float uCaratSize;
+
+in  vec2 vUV;
+out vec4 fragColor;
+
+const float PI          = 3.14159265359;
+const float GOLD_ANGLE  = PI * (3.0 - sqrt(5.0));
+
+float hash1(float n) { return fract(sin(n) * 43758.5453); }
+
+float hash(vec2 p) {
+  p  = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+
+vec2 rotate2D(vec2 v, float a) {
+  return vec2(cos(a)*v.x - sin(a)*v.y, sin(a)*v.x + cos(a)*v.y);
+}
+
+// Branchless refraction (matches S2 fix in Flutter shader)
+vec2 refract2D(vec2 inc, vec2 nor, float eta) {
+  float cosI  = dot(-inc, nor);
+  float sinT2 = eta * eta * (1.0 - cosI * cosI);
+  float cosT  = sqrt(max(0.0, 1.0 - sinT2));
+  float k     = step(sinT2, 1.0);  // 0 = TIR, 1 = propagate
+  return mix(inc, eta * inc + (eta * cosI - cosT) * nor, k);
+}
+
+float facetPattern(vec2 uv, float sc, float dep) {
+  vec2 s = uv * sc;
+  vec2 c = floor(s);
+  vec2 f = fract(s) - 0.5;
+  return length(rotate2D(f, hash(c) * PI * 2.0)) * dep;
+}
+
+// ---- layerBed: procedural diamond refraction background ----
+vec4 layerBed(vec2 uv, float t) {
+  vec2  c   = uv - 0.5;
+  vec2  n   = normalize(c + 0.0001);
+  float fac = facetPattern(uv, 6.0 + uFacetDepth * 4.0, uFacetDepth * 0.05);
+  vec2  rBase = refract2D(normalize(c + n * fac + 0.001), -n, 1.0 / uRefraction) * 0.18;
+
+  vec2 uvR = uv + rBase * (1.0 + uDispersion);
+  vec2 uvG = uv + rBase;
+  vec2 uvB = uv + rBase * (1.0 - uDispersion);
+
+  // Procedural iridescent colour from refracted UV
+  vec3 colR = vec3(0.5 + 0.5 * sin(uvR.x * 12.0 + t),
+                   0.5 + 0.5 * cos(uvR.y * 10.0 + t * 0.7),
+                   0.4);
+  vec3 colG = vec3(0.4,
+                   0.5 + 0.5 * sin(uvG.y * 11.0 + t * 1.1),
+                   0.5 + 0.5 * cos(uvG.x *  9.0 + t * 0.9));
+  vec3 colB = vec3(0.5 + 0.5 * cos(uvB.x * 13.0 + t * 0.8),
+                   0.4,
+                   0.5 + 0.5 * sin(uvB.y *  8.0 + t * 1.3));
+  vec3 col  = vec3(colR.r, colG.g, colB.b) * 0.55 + vec3(0.08);
+
+  // Lighting
+  vec3 nor = normalize(vec3(c * 2.0, 1.0 - length(c) * 2.0));
+  vec3 lgt = normalize(vec3(0.3, -0.5, 0.5));
+  float diff = max(0.0, dot(nor, lgt));
+  float spec = pow(max(0.0, dot(reflect(-lgt, nor), vec3(0.0, 0.0, 1.0))), 24.0);
+  col = col * (0.6 + diff * 0.4) + vec3(spec * 0.35);
+
+  return vec4(col, 1.0);
+}
+
+// ---- layerFrame: gold 24k bevel ring ----
+vec4 layerFrame(vec2 uv, float t) {
+  vec2  c      = uv - 0.5;
+  float dist   = length(c);
+  float bNorm  = clamp(uBevelDepth / 20.0, 0.0, 1.0);
+  float innerR = 0.38 - bNorm * 0.06;
+  float ring   = smoothstep(0.50, 0.49, dist) * smoothstep(innerR, innerR + 0.01, dist);
+  if (ring < 0.005) return vec4(0.0);
+
+  float angle = atan(c.y, c.x);
+  float sheen = pow(0.5 + 0.5 * cos(angle * 3.0 + t * 0.7), 2.0);
+  vec3 gold   = mix(mix(vec3(0.545,0.420,0.082), vec3(0.831,0.686,0.216), sheen),
+                    vec3(0.957,0.894,0.737), sheen * sheen)
+              + vec3(pow(sheen, 8.0) * 0.5);
+  return vec4(gold, ring);
+}
+
+// ---- layerPave: fibonacci pavé stones ----
+vec4 layerPave(vec2 uv, float t) {
+  vec4 result = vec4(0.0);
+  for (int i = 0; i < 64; i++) {
+    float fi    = float(i);
+    float gate  = step(fi, uStoneCount - 1.0);
+    float angle = fi * GOLD_ANGLE;
+    vec2  sc    = vec2(0.5 + 0.44 * cos(angle), 0.5 + 0.44 * sin(angle));
+    float dist  = length(uv - sc);
+    float r     = uCaratSize * 0.25 + 0.006;
+    float shim  = hash1(fi * 3.1 + floor(t * 2.0) * 0.3);
+    float stone = (1.0 - smoothstep(r * 0.5, r, dist)) * gate;
+    vec3  col   = mix(vec3(0.7, 0.8, 1.0), vec3(1.0), shim);
+    result      = mix(result, vec4(col, 1.0), stone * 0.75);
+  }
+  return result;
+}
+
+// ---- layerGlyph: chat-bubble outline + sparkle glints ----
+//
+// W5 fix: no early return on glyphMask < 0.01 — branchless multiply at return.
+// Buggy version:
+//   if (glyphMask < 0.01) return vec4(0.0);  // warp divergence on glyph edges
+// Fix: result * glyphMask at the return site.
+vec4 layerGlyph(vec2 uv, float t) {
+  // Chat-bubble SDF (rounded rect + tail)
+  vec2  p    = (uv - 0.5) * 2.0;   // [-1, 1]
+  vec2  tail = vec2(-0.35, 0.75);
+  float tailDist = length(uv - (tail * 0.5 + 0.5)) * 2.0;
+
+  // Rounded-rect SDF for body
+  vec2  q    = abs(p) - vec2(0.62, 0.52);
+  float body = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 0.10;
+
+  // Tail triangle SDF
+  vec2  tp   = p - vec2(-0.40, 0.62);
+  float tri  = max(abs(tp.x) - 0.12, tp.y - 0.0) - 0.04;
+  float sdf  = min(body, tri);
+
+  // Thin ring outline
+  float ring  = 1.0 - smoothstep(0.0, 0.015, abs(sdf));
+  float fill  = smoothstep(0.01, -0.01, sdf) * 0.12;  // subtle inner fill
+  float glyphMask = ring + fill;
+
+  // Animated sparkle glints scattered inside the glyph area
+  float glints = 0.0;
+  for (int i = 0; i < 6; i++) {
+    float fi  = float(i);
+    vec2  gp  = vec2(hash1(fi * 7.3) * 0.9 + 0.05, hash1(fi * 3.7) * 0.9 + 0.05);
+    float shim = (sin(t * 2.5 + fi * 1.9) + 1.0) * 0.5;
+    float d    = length(uv - gp);
+    glints    += shim * smoothstep(0.04, 0.0, d) * step(sdf, 0.0);
+  }
+
+  vec3  col    = mix(vec3(0.85, 0.78, 0.40), vec3(1.0), glints);
+  vec4  result = vec4(col, clamp(glyphMask + glints, 0.0, 1.0));
+
+  // W5 fix: branchless — multiply glyphMask into result at return
+  return result * clamp(glyphMask + glints, 0.0, 1.0);
+}
+
+// ---- Circle mask ----
+float circleMask(vec2 uv) {
+  return 1.0 - smoothstep(0.48, 0.50, length(uv - 0.5));
+}
+
+void main() {
+  vec2 uv = vUV;
+  float t = uTime;
+
+  vec4 bed   = layerBed(uv, t);
+  vec4 frame = layerFrame(uv, t);
+  vec4 pave  = layerPave(uv, t);
+  vec4 glyph = layerGlyph(uv, t);
+
+  // Composite in correct order (matches F4 fix in Flutter painter)
+  vec4 col = bed;
+  col = vec4(mix(col.rgb, frame.rgb, frame.a), max(col.a, frame.a));
+  col = vec4(mix(col.rgb, pave.rgb,  pave.a),  max(col.a, pave.a));
+  col = vec4(mix(col.rgb, glyph.rgb, glyph.a), max(col.a, glyph.a));
+
+  float mask = circleMask(uv);  // no early-return — multiply at output (mirrors S1)
+  fragColor  = vec4(col.rgb * mask, col.a * mask);
+}`;
+
+// ---------------------------------------------------------------------------
+// Background fragment shader
+//
+// W4 fix: sdNgon() and sdRound() removed — they were declared but never called.
+// ---------------------------------------------------------------------------
+const FRAG_BG = `#version 300 es
+precision mediump float;
+
+uniform vec2  uResolution;
+uniform float uTime;
+
+in  vec2 vUV;
+out vec4 fragColor;
+
+float hash(vec2 p) {
+  p  = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 43.21);
+  return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i),             hash(i + vec2(1,0)), u.x),
+             mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x), u.y);
+}
+
+void main() {
+  vec2 uv  = vUV;
+  float t  = uTime * 0.4;
+  float n  = noise(uv * 3.5 + vec2(t, t * 0.7));
+  float n2 = noise(uv * 7.0 - vec2(t * 0.5, t));
+
+  // Deep dark gold nebula background
+  vec3 base  = vec3(0.04, 0.03, 0.01);
+  vec3 glow  = vec3(0.18, 0.13, 0.02);
+  vec3 col   = mix(base, glow, n * n2 * 0.7);
+  col       += vec3(0.08, 0.06, 0.01) * pow(n2, 3.0);
+
+  fragColor = vec4(col, 1.0);
+}`;
+
+// ---------------------------------------------------------------------------
+// Particle vertex shader
+// ---------------------------------------------------------------------------
+const VERT_PARTICLES = `#version 300 es
+uniform vec2  uResolution;
+uniform float uTime;
+
+in  vec2  aPos;
+in  float aPhase;
+in  float aSpeed;
+
+out float vAlpha;
+
+void main() {
+  float t    = mod(uTime * aSpeed + aPhase, 1.0);
+  float angle = aPhase * 6.2831;
+  float r    = 0.35 + 0.12 * sin(aPhase * 17.3 + uTime * 0.5);
+
+  // Orbit around circle centre
+  vec2 pos   = vec2(0.5) + r * vec2(cos(angle + uTime * aSpeed * 0.8),
+                                     sin(angle + uTime * aSpeed * 0.8));
+  pos        = pos * 2.0 - 1.0;   // NDC
+
+  vAlpha = (0.4 + 0.6 * sin(uTime * 2.0 * aSpeed + aPhase * 10.0)) * (1.0 - abs(t - 0.5) * 2.0);
+
+  gl_Position = vec4(pos, 0.0, 1.0);
+  gl_PointSize = 2.5 + 2.0 * vAlpha;
+}`;
+
+// ---------------------------------------------------------------------------
+// Particle fragment shader
+//
+// W3 fix: `float brightness = hash(…)` removed — it was declared but never
+//         read (the value was not used to modify the output colour).
+// ---------------------------------------------------------------------------
+const FRAG_PARTICLES = `#version 300 es
+precision mediump float;
+
+in  float vAlpha;
+out vec4  fragColor;
+
+void main() {
+  float d = length(gl_PointCoord - 0.5);
+  float a = smoothstep(0.5, 0.0, d) * clamp(vAlpha, 0.0, 1.0);
+  fragColor = vec4(0.96, 0.88, 0.55, a);  // warm gold sparkle
+}`;
+
+// ---------------------------------------------------------------------------
+// WebGL setup — main icon canvas
+// ---------------------------------------------------------------------------
+const canvas  = document.getElementById('preview');
+const gl      = canvas.getContext('webgl2');
+if (!gl) { alert('WebGL 2 not supported in this browser.'); }
+
+const prog = createProgram(gl, VERT_SRC, FRAG_ICON);
+
+// W2 fix: progParticles is NOT created on the main `gl` context.
+// Buggy version had:  const progParticles = createProgram(gl, VERT_SRC, FRAG_PARTICLES);
+// Particles run on bgCtx only (separate canvas), so creating the program on gl
+// was dead code that wasted a shader compile + link on the wrong context.
+
+// Fullscreen quad
+const quadVerts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+const quadBuf   = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+
+const aPos = gl.getAttribLocation(prog, 'aPos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+// W1 fix: cache ALL uniform locations at init time.
+// Buggy version called gl.getUniformLocation(prog, '…') three times per frame
+// inside render(), generating ~360 redundant GL driver round-trips/second.
+const uLoc = {
+  resolution: gl.getUniformLocation(prog, 'uResolution'),
+  time:       gl.getUniformLocation(prog, 'uTime'),
+  refraction: gl.getUniformLocation(prog, 'uRefraction'),
+  sparkle:    gl.getUniformLocation(prog, 'uSparkle'),
+  facetDepth: gl.getUniformLocation(prog, 'uFacetDepth'),
+  dispersion: gl.getUniformLocation(prog, 'uDispersion'),
+  bevelDepth: gl.getUniformLocation(prog, 'uBevelDepth'),
+  stoneCount: gl.getUniformLocation(prog, 'uStoneCount'),
+  caratSize:  gl.getUniformLocation(prog, 'uCaratSize'),
+};
+
+// ---------------------------------------------------------------------------
+// WebGL setup — background canvas (particles live here, NOT on gl)
+// ---------------------------------------------------------------------------
+const bgCanvas = document.getElementById('bg');
+const bgGl     = bgCanvas.getContext('webgl2');
+if (!bgGl) { alert('WebGL 2 not available for background canvas.'); }
+
+const bgProg       = createProgram(bgGl, VERT_SRC, FRAG_BG);
+const partProg     = createProgram(bgGl, VERT_PARTICLES, FRAG_PARTICLES);
+
+// Background quad
+const bgQuadBuf = bgGl.createBuffer();
+bgGl.bindBuffer(bgGl.ARRAY_BUFFER, bgQuadBuf);
+bgGl.bufferData(bgGl.ARRAY_BUFFER, quadVerts, bgGl.STATIC_DRAW);
+
+const bgAPos = bgGl.getAttribLocation(bgProg, 'aPos');
+bgGl.enableVertexAttribArray(bgAPos);
+bgGl.vertexAttribPointer(bgAPos, 2, bgGl.FLOAT, false, 0, 0);
+
+// W1 fix: background uniform locations cached here too
+const bgULoc = {
+  resolution: bgGl.getUniformLocation(bgProg, 'uResolution'),
+  time:       bgGl.getUniformLocation(bgProg, 'uTime'),
+};
+
+// Particles
+const PARTICLE_COUNT = 64;
+const partPhases = new Float32Array(PARTICLE_COUNT);
+const partSpeeds = new Float32Array(PARTICLE_COUNT);
+const partPos    = new Float32Array(PARTICLE_COUNT * 2);  // dummy, computed in VS
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  partPhases[i] = Math.random();
+  partSpeeds[i] = 0.3 + Math.random() * 0.7;
+  partPos[i*2]  = (Math.random() - 0.5) * 2;
+  partPos[i*2+1]= (Math.random() - 0.5) * 2;
+}
+
+const partPosBuf   = bgGl.createBuffer();
+const partPhaseBuf = bgGl.createBuffer();
+const partSpeedBuf = bgGl.createBuffer();
+
+bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partPosBuf);
+bgGl.bufferData(bgGl.ARRAY_BUFFER, partPos,    bgGl.STATIC_DRAW);
+bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partPhaseBuf);
+bgGl.bufferData(bgGl.ARRAY_BUFFER, partPhases, bgGl.STATIC_DRAW);
+bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partSpeedBuf);
+bgGl.bufferData(bgGl.ARRAY_BUFFER, partSpeeds, bgGl.STATIC_DRAW);
+
+const partULoc = {
+  resolution: bgGl.getUniformLocation(partProg, 'uResolution'),
+  time:       bgGl.getUniformLocation(partProg, 'uTime'),
+};
+const partAPos   = bgGl.getAttribLocation(partProg, 'aPos');
+const partAPhase = bgGl.getAttribLocation(partProg, 'aPhase');
+const partASpeed = bgGl.getAttribLocation(partProg, 'aSpeed');
+
+// ---------------------------------------------------------------------------
+// Control wiring
+// ---------------------------------------------------------------------------
+const params = {
+  refraction: 2.42,
+  sparkle:    0.80,
+  facetDepth: 0.60,
+  dispersion: 0.02,
+  bevelDepth: 12.0,
+  stoneCount: 64,
+  caratSize:  0.05,
+};
+
+function wire(sliderId, spanId, key, fmt) {
+  const sl = document.getElementById(sliderId);
+  const sp = document.getElementById(spanId);
+  sl.addEventListener('input', () => {
+    params[key] = parseFloat(sl.value);
+    sp.textContent = fmt ? params[key].toFixed(fmt) : params[key];
+  });
+}
+wire('sRef', 'vRef', 'refraction', 2);
+wire('sSpk', 'vSpk', 'sparkle',    2);
+wire('sFac', 'vFac', 'facetDepth', 2);
+wire('sDis', 'vDis', 'dispersion', 3);
+wire('sBev', 'vBev', 'bevelDepth', 1);
+wire('sSto', 'vSto', 'stoneCount', 0);
+
+// ---------------------------------------------------------------------------
+// Render loop — uses CACHED locations; no getUniformLocation inside render()
+// ---------------------------------------------------------------------------
+function render(ts) {
+  const t = ts / 1000;
+
+  // --- Background pass ---
+  bgGl.viewport(0, 0, bgCanvas.width, bgCanvas.height);
+  bgGl.clearColor(0, 0, 0, 1);
+  bgGl.clear(bgGl.COLOR_BUFFER_BIT);
+
+  bgGl.useProgram(bgProg);
+
+  // W1 fix: use cached bgULoc (not bgGl.getUniformLocation on every frame)
+  bgGl.uniform2f(bgULoc.resolution, bgCanvas.width, bgCanvas.height);
+  bgGl.uniform1f(bgULoc.time, t);
+
+  bgGl.bindBuffer(bgGl.ARRAY_BUFFER, bgQuadBuf);
+  bgGl.enableVertexAttribArray(bgAPos);
+  bgGl.vertexAttribPointer(bgAPos, 2, bgGl.FLOAT, false, 0, 0);
+  bgGl.drawArrays(bgGl.TRIANGLE_STRIP, 0, 4);
+
+  // --- Particle pass (on bgGl only — W2) ---
+  bgGl.useProgram(partProg);
+  bgGl.enable(bgGl.BLEND);
+  bgGl.blendFunc(bgGl.SRC_ALPHA, bgGl.ONE);
+
+  bgGl.uniform2f(partULoc.resolution, bgCanvas.width, bgCanvas.height);
+  bgGl.uniform1f(partULoc.time, t);
+
+  bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partPosBuf);
+  bgGl.enableVertexAttribArray(partAPos);
+  bgGl.vertexAttribPointer(partAPos, 2, bgGl.FLOAT, false, 0, 0);
+
+  bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partPhaseBuf);
+  bgGl.enableVertexAttribArray(partAPhase);
+  bgGl.vertexAttribPointer(partAPhase, 1, bgGl.FLOAT, false, 0, 0);
+
+  bgGl.bindBuffer(bgGl.ARRAY_BUFFER, partSpeedBuf);
+  bgGl.enableVertexAttribArray(partASpeed);
+  bgGl.vertexAttribPointer(partASpeed, 1, bgGl.FLOAT, false, 0, 0);
+
+  bgGl.drawArrays(bgGl.POINTS, 0, PARTICLE_COUNT);
+  bgGl.disable(bgGl.BLEND);
+
+  // --- Main icon pass ---
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  gl.useProgram(prog);
+
+  // W1 fix: all locations come from the cached uLoc object (set at init, line ~220)
+  gl.uniform2f(uLoc.resolution, canvas.width, canvas.height);
+  gl.uniform1f(uLoc.time,       t);
+  gl.uniform1f(uLoc.refraction, params.refraction);
+  gl.uniform1f(uLoc.sparkle,    params.sparkle);
+  gl.uniform1f(uLoc.facetDepth, params.facetDepth);
+  gl.uniform1f(uLoc.dispersion, params.dispersion);
+  gl.uniform1f(uLoc.bevelDepth, params.bevelDepth);
+  gl.uniform1f(uLoc.stoneCount, params.stoneCount);
+  gl.uniform1f(uLoc.caratSize,  params.caratSize);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
