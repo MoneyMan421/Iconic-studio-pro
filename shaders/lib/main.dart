@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -99,6 +101,9 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  static const double exportPixelRatio = 3.0;
+  static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
+  final GlobalKey _previewKey = GlobalKey();
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -125,6 +130,60 @@ class _StudioPageState extends State<StudioPage> {
       barrierDismissible: false,
       builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
     );
+  }
+
+  Future<void> _exportPng() async {
+    if (state.userImage == null) {
+      _showSnackBar('Upload an icon before exporting.');
+      return;
+    }
+
+    final boundaryContext = _previewKey.currentContext;
+    if (boundaryContext == null) {
+      _showSnackBar('Preview is not ready yet.');
+      return;
+    }
+
+    try {
+      final boundary = boundaryContext.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showSnackBar('Could not capture preview.');
+        return;
+      }
+
+      final image = await boundary.toImage(pixelRatio: exportPixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showSnackBar('Could not generate image data.');
+        return;
+      }
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final selectedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save exported icon',
+        fileName: 'iconic_export.png',
+        type: FileType.custom,
+        allowedExtensions: ['png'],
+      );
+
+      if (selectedPath == null) {
+        return;
+      }
+
+      final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
+      final normalizedPath = hasPngExtension ? selectedPath : '$selectedPath.png';
+      await File(normalizedPath).writeAsBytes(pngBytes);
+      _showSnackBar('Icon exported to $normalizedPath');
+    } catch (error, stackTrace) {
+      debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _showSnackBar('Export failed. Please try again.');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -171,7 +230,14 @@ class _StudioPageState extends State<StudioPage> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: Center(child: PreviewCanvas(state: state))),
+                Expanded(
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _previewKey,
+                      child: PreviewCanvas(state: state),
+                    ),
+                  ),
+                ),
                 _buildStatsBar(),
               ],
             ),
@@ -263,7 +329,7 @@ class _StudioPageState extends State<StudioPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _exportPng,
               icon: const Icon(Icons.download, size: 18),
               label: const Text('Export Icon', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -319,7 +385,10 @@ class _StatItem extends StatelessWidget {
         Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
       ],
     );
-  }class PreviewCanvas extends StatelessWidget {
+  }
+}
+
+class PreviewCanvas extends StatelessWidget {
   final EditorState state;
   const PreviewCanvas({super.key, required this.state});
 
@@ -555,6 +624,4 @@ class PaywallModal extends StatelessWidget {
       ),
     );
   }
-}
-
 }
