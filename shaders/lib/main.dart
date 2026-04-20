@@ -99,6 +99,7 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  final GlobalKey _previewKey = GlobalKey();
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -171,7 +172,14 @@ class _StudioPageState extends State<StudioPage> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: Center(child: PreviewCanvas(state: state))),
+                Expanded(
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _previewKey,
+                      child: PreviewCanvas(state: state),
+                    ),
+                  ),
+                ),
                 _buildStatsBar(),
               ],
             ),
