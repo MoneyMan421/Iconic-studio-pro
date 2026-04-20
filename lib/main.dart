@@ -236,8 +236,18 @@ class _StudioPageState extends State<StudioPage> with WidgetsBindingObserver {
         allowMultiple: false,
       );
       pickedFile = result?.files.single;
-    } catch (e) {
-      _showSnackBar('Could not open file picker: $e');
+    } catch (error, stackTrace) {
+      debugPrint('Error picking image file: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'studio',
+          context: ErrorDescription('Image file picker failed'),
+        ),
+      );
+      _showSnackBar('Could not open file picker: $error');
       return;
     }
 
@@ -248,8 +258,18 @@ class _StudioPageState extends State<StudioPage> with WidgetsBindingObserver {
     final int fileSize;
     try {
       fileSize = await file.length();
-    } catch (e) {
-      _showSnackBar('Cannot read file: $e');
+    } catch (error, stackTrace) {
+      debugPrint('Error reading selected image file: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'studio',
+          context: ErrorDescription('Selected image file read failed'),
+        ),
+      );
+      _showSnackBar('Cannot read file: $error');
       return;
     }
 
@@ -300,8 +320,18 @@ class _StudioPageState extends State<StudioPage> with WidgetsBindingObserver {
       await outputFile.writeAsBytes(byteData.buffer.asUint8List());
 
       _showSnackBar('Saved to ${outputFile.path}');
-    } catch (e) {
-      _showSnackBar('Export failed: $e');
+    } catch (error, stackTrace) {
+      debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'studio',
+          context: ErrorDescription('Icon export failed'),
+        ),
+      );
+      _showSnackBar('Export failed: $error');
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -893,4 +923,3 @@ class PaywallModal extends StatelessWidget {
     );
   }
 }
-
