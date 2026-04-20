@@ -416,7 +416,7 @@ class _StudioPageState extends State<StudioPage> {
         _showSnackBar('Shader exported successfully');
       }
     } catch (error, stackTrace) {
-      debugPrint('Export failed: $error');
+      debugPrint('Shader export failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       FlutterError.reportError(
         FlutterErrorDetails(
@@ -426,7 +426,7 @@ class _StudioPageState extends State<StudioPage> {
           context:   ErrorDescription('Shader export failed'),
         ),
       );
-      _showSnackBar('Export failed: $error');
+      _showSnackBar('Shader export failed: $error');
     }
   }
 
@@ -467,8 +467,18 @@ class _StudioPageState extends State<StudioPage> {
                 key: _previewKey,
                 child: _shaderSource != null
                     ? ShaderBackground(
+                        // The loaded shader path is shown in the source viewer;
+                        // the background asset is the bundled default shader.
                         shaderAsset: 'shaders/diamond_master.frag',
-                        child: const SizedBox(width: 300, height: 300),
+                        child: Container(
+                          width:  300,
+                          height: 300,
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Shader loaded',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
                       )
                     : const Text(
                         'Load a shader file to preview',
@@ -1404,7 +1414,8 @@ class PaywallModal extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class ShaderBackground extends StatelessWidget {
-  /// Path to the shader asset (retained for future live-shader integration).
+  // TODO(dev): Replace gradient with a live FragmentShader render once the
+  // shader pipeline supports backgrounds without an image sampler input.
   final String shaderAsset;
   final Widget child;
 
