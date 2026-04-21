@@ -161,16 +161,18 @@ class _StudioPageState extends State<StudioPage> {
   Future<void> _saveState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('scale', state.scale);
-      await prefs.setDouble('rotation', state.rotation);
-      await prefs.setDouble('brightness', state.brightness);
-      await prefs.setDouble('contrast', state.contrast);
-      await prefs.setDouble('saturation', state.saturation);
-      await prefs.setDouble('blur', state.blur);
-      await prefs.setDouble('refractionIndex', state.refractionIndex);
-      await prefs.setDouble('sparkleIntensity', state.sparkleIntensity);
-      await prefs.setDouble('facetDepth', state.facetDepth);
-      await prefs.setInt('importsUsed', importsUsed);
+      await Future.wait([
+        prefs.setDouble('scale', state.scale),
+        prefs.setDouble('rotation', state.rotation),
+        prefs.setDouble('brightness', state.brightness),
+        prefs.setDouble('contrast', state.contrast),
+        prefs.setDouble('saturation', state.saturation),
+        prefs.setDouble('blur', state.blur),
+        prefs.setDouble('refractionIndex', state.refractionIndex),
+        prefs.setDouble('sparkleIntensity', state.sparkleIntensity),
+        prefs.setDouble('facetDepth', state.facetDepth),
+        prefs.setInt('importsUsed', importsUsed),
+      ]);
     } catch (error, stackTrace) {
       debugPrint('Save state failed: $error');
       debugPrintStack(stackTrace: stackTrace);
