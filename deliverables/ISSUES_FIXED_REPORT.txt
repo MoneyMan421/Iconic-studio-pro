@@ -14,6 +14,5 @@ Validation status:
 
 Next step for full validation on your machine:
 - flutter pub get
-- flutter analyze
+- flutter analyze --fatal-infos
 - flutter test
-- flutter run
