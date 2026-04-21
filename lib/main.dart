@@ -16,16 +16,16 @@ class AppColors {
 }
 
 class EditorState {
-  double scale;
-  double rotation;
-  double brightness;
-  double contrast;
-  double saturation;
-  double blur;
-  double refractionIndex;
-  double sparkleIntensity;
-  double facetDepth;
-  File? userImage;
+  final double scale;
+  final double rotation;
+  final double brightness;
+  final double contrast;
+  final double saturation;
+  final double blur;
+  final double refractionIndex;
+  final double sparkleIntensity;
+  final double facetDepth;
+  final File? userImage;
 
   EditorState({
     this.scale = 50,
@@ -64,10 +64,15 @@ class EditorState {
     userImage: userImage ?? this.userImage,
   );
 }
-void main() => runApp(const IconStudioPro());
+void main() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+  runApp(const IconicStudioApp());
+}
 
-class IconStudioPro extends StatelessWidget {
-  const IconStudioPro({super.key});
+class IconicStudioApp extends StatelessWidget {
+  const IconicStudioApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +84,7 @@ class IconStudioPro extends StatelessWidget {
           activeTrackColor: AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor: AppColors.gold,
-          overlayColor: AppColors.gold.withOpacity(0.2),
+          overlayColor: AppColors.gold.withValues(alpha: 0.2),
           trackHeight: 4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
@@ -143,6 +148,7 @@ class _StudioPageState extends State<StudioPage> {
       return;
     }
 
+    ui.Image? image;
     try {
       final boundary = boundaryContext.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
@@ -150,7 +156,7 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      final image = await boundary.toImage(pixelRatio: exportPixelRatio);
+      image = await boundary.toImage(pixelRatio: exportPixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
         _showMessage('Could not generate image data.');
@@ -179,6 +185,8 @@ class _StudioPageState extends State<StudioPage> {
       debugPrint('Export failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       _showMessage('Export failed. Please try again.');
+    } finally {
+      image?.dispose();
     }
   }
 
@@ -269,9 +277,9 @@ class _StudioPageState extends State<StudioPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.gold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
             child: const Text('Premium', style: TextStyle(fontSize: 11, color: AppColors.gold, fontWeight: FontWeight.w600)),
           ),
@@ -344,7 +352,7 @@ class _StudioPageState extends State<StudioPage> {
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
-              style: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11),
+               style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11),
             ),
           ],
         ],
@@ -414,10 +422,10 @@ class PreviewCanvas extends StatelessWidget {
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withOpacity(0.1),
+                  color: AppColors.gold.withValues(alpha: 0.1),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
@@ -456,7 +464,7 @@ class PreviewCanvas extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.1),
+                      color: AppColors.gold.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.upload, color: AppColors.gold, size: 24),
@@ -526,7 +534,7 @@ class DiamondPlaceholderPainter extends CustomPainter {
     canvas.drawPath(path, paint);
     
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     
@@ -589,7 +597,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withOpacity(0.1) : AppColors.uploadZone,
+        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
       ),
