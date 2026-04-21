@@ -107,7 +107,7 @@ class IconicStudioApp extends StatelessWidget {
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
         settings: settings,
-        builder: (_) => const NotFoundPage(),
+        builder: (context) => const NotFoundPage(),
       ),
     );
   }
@@ -149,7 +149,6 @@ class _StudioPageState extends State<StudioPage> {
           refractionIndex: prefs.getDouble('refractionIndex') ?? 2.42,
           sparkleIntensity: prefs.getDouble('sparkleIntensity') ?? 0.8,
           facetDepth: prefs.getDouble('facetDepth') ?? 0.6,
-          userImage: state.userImage,
         );
         importsUsed = prefs.getInt('importsUsed') ?? 0;
       });
