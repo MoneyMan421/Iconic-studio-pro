@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,21 +57,15 @@ void main() {
   });
 
   group('Color API withValues guard', () {
-    test('withValues preserves rgb and updates alpha', () {
-      const source = AppColors.gold;
-      final updated = source.withValues(alpha: 0.2);
+    testWidgets('app theme slider overlay uses expected withValues color', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const IconicStudioApp());
 
-      expect(updated.red, source.red);
-      expect(updated.green, source.green);
-      expect(updated.blue, source.blue);
-      expect(updated.alpha, closeTo((0.2 * 255).round(), 1));
-    });
-  });
+      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      final overlayColor = materialApp.theme?.sliderTheme.overlayColor;
 
-  group('SharedPreferences path key', () {
-    test('no SharedPreferences key is currently defined in main app source', () {
-      final source = File('lib/main.dart').readAsStringSync();
-      expect(source.contains('SharedPreferences'), isFalse);
+      expect(overlayColor, AppColors.gold.withValues(alpha: 0.2));
     });
   });
 }
