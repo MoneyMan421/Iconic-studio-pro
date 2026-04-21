@@ -135,6 +135,12 @@ class _StudioPageState extends State<StudioPage> {
     _loadState();
   }
 
+  @override
+  void dispose() {
+    _saveDebounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -405,12 +411,6 @@ class _StudioPageState extends State<StudioPage> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _saveDebounce?.cancel();
-    super.dispose();
   }
 
   Widget _buildExportButton() {
