@@ -1205,7 +1205,7 @@ class PreviewCanvas extends StatelessWidget {
         scale: scaleFactor,
         child: ShaderBuilder(
           assetKey: 'shaders/diamond_master.frag',
-          (context, shader, child) => AnimatedSampler(
+          builder: (context, shader, child) => AnimatedSampler(
             (image, size, canvas) {
               _configureShader(shader, size);
               shader.setImageSampler(0, image);
