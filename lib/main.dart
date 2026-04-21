@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0A0A0A);
@@ -64,27 +65,48 @@ class EditorState {
     userImage: userImage ?? this.userImage,
   );
 }
-void main() => runApp(const IconStudioPro());
+void main() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exception}');
+    debugPrintStack(stackTrace: details.stack);
+  };
 
-class IconStudioPro extends StatelessWidget {
-  const IconStudioPro({super.key});
+  runApp(const IconicStudioApp());
+}
+
+class IconicStudioApp extends StatelessWidget {
+  const IconicStudioApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Iconic Studio Pro',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00d4ff),
+          brightness: Brightness.dark,
+        ),
         sliderTheme: SliderThemeData(
           activeTrackColor: AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor: AppColors.gold,
-          overlayColor: AppColors.gold.withOpacity(0.2),
+          overlayColor: AppColors.gold.withValues(alpha: 0.2),
           trackHeight: 4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
       ),
-      home: const StudioPage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const StudioPage(),
+        '/marketplace': (context) => const MarketplacePage(),
+        '/dashboard': (context) => const DashboardPage(),
+      },
+      onUnknownRoute: (_) => MaterialPageRoute(
+        builder: (_) => const NotFoundPage(),
+      ),
     );
   }
 }
@@ -104,6 +126,55 @@ class _StudioPageState extends State<StudioPage> {
   static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        state = EditorState(
+          scale: prefs.getDouble('scale') ?? 50,
+          rotation: prefs.getDouble('rotation') ?? 0,
+          brightness: prefs.getDouble('brightness') ?? 100,
+          contrast: prefs.getDouble('contrast') ?? 100,
+          saturation: prefs.getDouble('saturation') ?? 100,
+          blur: prefs.getDouble('blur') ?? 0,
+          refractionIndex: prefs.getDouble('refractionIndex') ?? 2.42,
+          sparkleIntensity: prefs.getDouble('sparkleIntensity') ?? 0.8,
+          facetDepth: prefs.getDouble('facetDepth') ?? 0.6,
+          userImage: state.userImage,
+        );
+        importsUsed = prefs.getInt('importsUsed') ?? 0;
+      });
+    } catch (error, stackTrace) {
+      debugPrint('Load state failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  Future<void> _saveState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('scale', state.scale);
+      await prefs.setDouble('rotation', state.rotation);
+      await prefs.setDouble('brightness', state.brightness);
+      await prefs.setDouble('contrast', state.contrast);
+      await prefs.setDouble('saturation', state.saturation);
+      await prefs.setDouble('blur', state.blur);
+      await prefs.setDouble('refractionIndex', state.refractionIndex);
+      await prefs.setDouble('sparkleIntensity', state.sparkleIntensity);
+      await prefs.setDouble('facetDepth', state.facetDepth);
+      await prefs.setInt('importsUsed', importsUsed);
+    } catch (error, stackTrace) {
+      debugPrint('Save state failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
       _showPaywall();
@@ -120,6 +191,7 @@ class _StudioPageState extends State<StudioPage> {
         state = state.copyWith(userImage: File(result.files.single.path!));
         importsUsed++;
       });
+      _saveState();
     }
   }
 
@@ -312,7 +384,15 @@ class _StudioPageState extends State<StudioPage> {
             ],
           ),
           const SizedBox(height: 8),
-          Slider(value: value, min: min, max: max, onChanged: onChanged),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: (v) {
+              onChanged(v);
+              _saveState();
+            },
+          ),
         ],
       ),
     );
@@ -621,6 +701,57 @@ class PaywallModal extends StatelessWidget {
             ),
           )),
         ],
+      ),
+    );
+  }
+}
+
+class MarketplacePage extends StatelessWidget {
+  const MarketplacePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Text(
+          'Marketplace',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Text(
+          'Dashboard',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class NotFoundPage extends StatelessWidget {
+  const NotFoundPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Text(
+          'Page not found',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
       ),
     );
   }
