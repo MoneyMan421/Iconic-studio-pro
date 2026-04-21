@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -104,7 +105,8 @@ class IconicStudioApp extends StatelessWidget {
         '/marketplace': (context) => const MarketplacePage(),
         '/dashboard': (context) => const DashboardPage(),
       },
-      onUnknownRoute: (_) => MaterialPageRoute(
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        settings: settings,
         builder: (_) => const NotFoundPage(),
       ),
     );
@@ -121,6 +123,7 @@ class StudioPage extends StatefulWidget {
 class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
+  Timer? _saveDebounce;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
@@ -175,6 +178,11 @@ class _StudioPageState extends State<StudioPage> {
     }
   }
 
+  void _scheduleSave() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 250), _saveState);
+  }
+
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
       _showPaywall();
@@ -191,7 +199,7 @@ class _StudioPageState extends State<StudioPage> {
         state = state.copyWith(userImage: File(result.files.single.path!));
         importsUsed++;
       });
-      _saveState();
+      _scheduleSave();
     }
   }
 
@@ -390,12 +398,18 @@ class _StudioPageState extends State<StudioPage> {
             max: max,
             onChanged: (v) {
               onChanged(v);
-              _saveState();
+              _scheduleSave();
             },
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _saveDebounce?.cancel();
+    super.dispose();
   }
 
   Widget _buildExportButton() {
