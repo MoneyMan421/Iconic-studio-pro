@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
@@ -170,7 +169,7 @@ class IconStudioPro extends StatelessWidget {
           activeTrackColor:   AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor:         AppColors.gold,
-          overlayColor:       AppColors.gold.withOpacity(0.2),
+          overlayColor:       AppColors.gold.withValues(alpha: 0.2),
           trackHeight:        4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
@@ -290,7 +289,7 @@ class ProductDetailPage extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFF00d4ff).withOpacity(0.3),
+                  color: const Color(0xFF00d4ff).withValues(alpha: 0.3),
                 ),
               ),
               child: const Center(
@@ -407,8 +406,9 @@ class _StudioPageState extends State<StudioPage> {
       }
 
       final result = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export Shader',
-        fileName:    'diamond_master.frag',
+        dialogTitle:       'Export Shader',
+        fileName:          'diamond_master.frag',
+        allowedExtensions: ['frag', 'glsl'],
       );
 
       if (result != null) {
@@ -960,9 +960,9 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color:        AppColors.gold.withOpacity(0.15),
+              color:        AppColors.gold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border:       Border.all(color: AppColors.gold.withOpacity(0.3)),
+              border:       Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
             child: Text(
               isPro ? 'Pro' : 'Free',
@@ -1042,7 +1042,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
                 foregroundColor: Colors.black,
-                disabledBackgroundColor: AppColors.gold.withOpacity(0.5),
+                disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -1051,7 +1051,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
-              style: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11),
+              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11),
             ),
           ],
         ],
@@ -1142,10 +1142,10 @@ class PreviewCanvas extends StatelessWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape:    BoxShape.circle,
-                border:   Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+                border:   Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color:       AppColors.gold.withOpacity(0.1),
+                    color:       AppColors.gold.withValues(alpha: 0.1),
                     blurRadius:  40,
                     spreadRadius: 10,
                   ),
@@ -1172,7 +1172,7 @@ class PreviewCanvas extends StatelessWidget {
                   Container(
                     padding:    const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.1),
+                      color: AppColors.gold.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.upload, color: AppColors.gold, size: 24),
@@ -1282,7 +1282,7 @@ class DiamondPlaceholderPainter extends CustomPainter {
     canvas.drawPath(path, fillPaint);
 
     final linePaint = Paint()
-      ..color       = Colors.white.withOpacity(0.3)
+      ..color       = Colors.white.withValues(alpha: 0.3)
       ..style       = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -1371,7 +1371,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding:    const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:        isPopular ? AppColors.gold.withOpacity(0.1) : AppColors.uploadZone,
+        color:        isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
         border:       Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
       ),

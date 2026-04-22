@@ -44,11 +44,11 @@ void main() {
 
   group('AppColors', () {
     test('gold colour is correct', () {
-      expect(AppColors.gold.value, const Color(0xFFD4AF37).value);
+      expect(AppColors.gold.toARGB32(), const Color(0xFFD4AF37).toARGB32());
     });
 
     test('background colour is correct', () {
-      expect(AppColors.background.value, const Color(0xFF0A0A0A).value);
+      expect(AppColors.background.toARGB32(), const Color(0xFF0A0A0A).toARGB32());
     });
   });
 
