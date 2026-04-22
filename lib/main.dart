@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -15,6 +16,7 @@ class AppColors {
   static const Color uploadZone = Color(0xFF111111);
 }
 
+@immutable
 class EditorState {
   final double scale;
   final double rotation;
@@ -27,7 +29,7 @@ class EditorState {
   final double facetDepth;
   final File? userImage;
 
-  EditorState({
+  const EditorState({
     this.scale = 50,
     this.rotation = 0,
     this.brightness = 100,
