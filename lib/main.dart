@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -235,7 +237,7 @@ class _StudioPageState extends State<StudioPage> {
                   child: Center(
                     child: RepaintBoundary(
                       key: _previewBoundaryKey,
-                      child: PreviewCanvas(state: state),
+                      child: PreviewCanvas(state: state, onPickImage: _pickImage),
                     ),
                   ),
                 ),
@@ -388,17 +390,50 @@ class _StatItem extends StatelessWidget {
     );
   }
 }
-class PreviewCanvas extends StatelessWidget {
+class PreviewCanvas extends StatefulWidget {
   final EditorState state;
-  const PreviewCanvas({super.key, required this.state});
+  final VoidCallback onPickImage;
+  const PreviewCanvas({
+    super.key,
+    required this.state,
+    required this.onPickImage,
+  });
+
+  @override
+  State<PreviewCanvas> createState() => _PreviewCanvasState();
+}
+
+class _PreviewCanvasState extends State<PreviewCanvas>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  double _elapsedSeconds = 0;
+
+  // Light position orbits for sparkle
+  static const double _lightOrbitRadius = 0.3;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((elapsed) {
+      setState(() => _elapsedSeconds = elapsed.inMilliseconds / 1000.0);
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final s = widget.state;
+    return SizedBox(
       width: 380,
       height: 500,
       child: Column(
         children: [
+          // Label bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -406,49 +441,64 @@ class PreviewCanvas extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.panelBorder),
             ),
-            child: const Text('Preview Canvas', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            child: const Text('Preview Canvas',
+                style: TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12)),
           ),
           const SizedBox(height: 16),
+          // Diamond preview circle
           Container(
             width: 300,
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+              border: Border.all(
+                color: AppColors.gold.withValues(alpha: 0.3),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withOpacity(0.1),
+                  color: AppColors.gold.withValues(alpha: 0.1),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
               ],
             ),
             child: ClipOval(
-              child: state.userImage != null
-                ? ShaderBuilder(
-                    assetKey: 'shaders/diamond_master.frag',
-                    (context, shader, child) => AnimatedSampler(
-                      (image, size, canvas) {
-                        _configureShader(shader, size);
-                        shader.setImageSampler(0, image);
-                        canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
-                      },
-                      child: Image.file(state.userImage!, fit: BoxFit.cover, width: 300, height: 300),
-                    ),
-                  )
-                : _buildPlaceholder(),
+              child: s.userImage != null
+                  ? ShaderBuilder(
+                      assetKey: 'shaders/diamond_master.frag',
+                      (context, shader, child) => AnimatedSampler(
+                        (image, size, canvas) {
+                          _configureShader(shader, size, s);
+                          shader.setImageSampler(0, image);
+                          canvas.drawRect(
+                            Offset.zero & size,
+                            Paint()..shader = shader,
+                          );
+                        },
+                        child: Image.file(
+                          s.userImage!,
+                          fit: BoxFit.cover,
+                          width: 300,
+                          height: 300,
+                        ),
+                      ),
+                    )
+                  : _buildPlaceholder(),
             ),
           ),
           const SizedBox(height: 24),
+          // Upload zone
           GestureDetector(
-            onTap: () => (context.findAncestorStateOfType<_StudioPageState>())?._pickImage(),
+            onTap: widget.onPickImage,
             child: Container(
               width: 300,
               height: 100,
               decoration: BoxDecoration(
                 color: AppColors.uploadZone,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.panelBorder, style: BorderStyle.solid),
+                border: Border.all(color: AppColors.panelBorder),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -456,15 +506,20 @@ class PreviewCanvas extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.1),
+                      color: AppColors.gold.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.upload, color: AppColors.gold, size: 24),
+                    child: const Icon(Icons.upload,
+                        color: AppColors.gold, size: 24),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Upload your icon', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                  const Text('Upload your icon',
+                      style: TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14)),
                   const SizedBox(height: 4),
-                  const Text('PNG, SVG, or JPG (max. 5MB)', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                  const Text('PNG, SVG, or JPG (max. 5 MB)',
+                      style: TextStyle(
+                          color: AppColors.textSecondary, fontSize: 11)),
                 ],
               ),
             ),
@@ -474,70 +529,37 @@ class PreviewCanvas extends StatelessWidget {
     );
   }
 
-  void _configureShader(FragmentShader shader, Size size) {
-    final time = DateTime.now().millisecondsSinceEpoch / 1000.0;
-    shader.setFloat(0, size.width);
-    shader.setFloat(1, size.height);
-    shader.setFloat(2, time);
-    shader.setFloat(3, state.refractionIndex);
-    shader.setFloat(4, state.sparkleIntensity);
-    shader.setFloat(5, state.facetDepth);
-    shader.setFloat(6, state.brightness / 100);
-    shader.setFloat(7, state.contrast / 100);
-    shader.setFloat(8, state.saturation / 100);
-    shader.setFloat(9, state.blur / 20);
-    shader.setFloat(10, 0.3);
-    shader.setFloat(11, -0.5);
-    shader.setFloat(12, 0.5);
-  }
-
   Widget _buildPlaceholder() {
     return Container(
-      color: AppColors.panel,
+      color: AppColors.uploadZone,
       child: Center(
-        child: CustomPaint(
-          size: const Size(120, 120),
-          painter: DiamondPlaceholderPainter(),
-        ),
+        child: Icon(Icons.diamond,
+            color: AppColors.gold.withValues(alpha: 0.3), size: 80),
       ),
     );
   }
-}
 
-class DiamondPlaceholderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final paint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppColors.goldLight, AppColors.gold, Color(0xFF8B6914)],
-      ).createShader(Rect.fromCenter(center: center, width: size.width, height: size.height))
-      ..style = PaintingStyle.fill;
-    
-    final path = Path()
-      ..moveTo(center.dx, center.dy - size.height * 0.4)
-      ..lineTo(center.dx + size.width * 0.4, center.dy)
-      ..lineTo(center.dx, center.dy + size.height * 0.4)
-      ..lineTo(center.dx - size.width * 0.4, center.dy)
-      ..close();
-    
-    canvas.drawPath(path, paint);
-    
-    final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    
-    canvas.drawLine(Offset(center.dx, center.dy - size.height * 0.4), center, linePaint);
-    canvas.drawLine(Offset(center.dx + size.width * 0.4, center.dy), center, linePaint);
-    canvas.drawLine(Offset(center.dx, center.dy + size.height * 0.4), center, linePaint);
-    canvas.drawLine(Offset(center.dx - size.width * 0.4, center.dy), center, linePaint);
+  /// Sets every uniform the shader expects. Indices must match GLSL!
+  void _configureShader(FragmentShader shader, Size size, EditorState s) {
+    // Orbiting light position for sparkle
+    final lightX = _lightOrbitRadius * math.cos(_elapsedSeconds * 0.4);
+    final lightY = _lightOrbitRadius * math.sin(_elapsedSeconds * 0.4);
+
+    shader.setFloat(0, size.width);                                        // uSize.x
+    shader.setFloat(1, size.height);                                       // uSize.y
+    shader.setFloat(2, _elapsedSeconds);                                   // uTime
+    shader.setFloat(3, s.refractionIndex);                                 // uRefractionIndex
+    shader.setFloat(4, s.sparkleIntensity);                                // uSparkleIntensity
+    shader.setFloat(5, s.facetDepth);                                      // uFacetDepth
+    shader.setFloat(6, s.brightness / 100.0);                             // uBrightness
+    shader.setFloat(7, s.contrast / 100.0);                               // uContrast
+    shader.setFloat(8, s.saturation / 100.0);                             // uSaturation
+    shader.setFloat(9, s.blur);                                            // uBlur
+    shader.setFloat(10, lightX);                                           // uLightPosition.x
+    shader.setFloat(11, lightY);                                           // uLightPosition.y
+    shader.setFloat(12, 1.0);                                              // uLightPosition.z
+    shader.setFloat(13, s.rotation * (math.pi / 180.0));                  // uRotation (radians)
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class PaywallModal extends StatelessWidget {
