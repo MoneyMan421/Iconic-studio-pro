@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
@@ -489,6 +490,7 @@ class PreviewCanvas extends StatelessWidget {
     shader.setFloat(10, 0.3);
     shader.setFloat(11, -0.5);
     shader.setFloat(12, 0.5);
+    shader.setFloat(13, state.rotation * pi / 180.0);
   }
 
   Widget _buildPlaceholder() {

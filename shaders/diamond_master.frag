@@ -11,6 +11,7 @@ uniform float uContrast;
 uniform float uSaturation;
 uniform float uBlur;
 uniform vec3 uLightPosition;
+uniform float uRotation;
 uniform sampler2D uUserImage;
 
 out vec4 fragColor;
