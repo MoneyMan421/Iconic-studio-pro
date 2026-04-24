@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -78,7 +79,7 @@ class IconStudioPro extends StatelessWidget {
           activeTrackColor: AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor: AppColors.gold,
-          overlayColor: AppColors.gold.withOpacity(0.2),
+          overlayColor: AppColors.gold.withValues(alpha: 0.2),
           trackHeight: 4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
@@ -99,6 +100,55 @@ class _StudioPageState extends State<StudioPage> {
   EditorState state = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
+  static const double exportPixelRatio = 3.0;
+  static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
+  final GlobalKey _previewBoundaryKey = GlobalKey();
+
+  Future<void> _exportIcon() async {
+    if (state.userImage == null) {
+      _showMessage('Upload an icon before exporting.');
+      return;
+    }
+    final boundaryContext = _previewBoundaryKey.currentContext;
+    if (boundaryContext == null) {
+      _showMessage('Preview is not ready yet.');
+      return;
+    }
+    try {
+      final boundary = boundaryContext.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showMessage('Could not capture preview.');
+        return;
+      }
+      final image = await boundary.toImage(pixelRatio: exportPixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showMessage('Could not generate image data.');
+        return;
+      }
+      final selectedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save exported icon',
+        fileName: 'iconic_export.png',
+        type: FileType.custom,
+        allowedExtensions: ['png'],
+      );
+      if (selectedPath == null) return;
+      final normalizedPath = _pngExtensionPattern.hasMatch(selectedPath)
+          ? selectedPath
+          : '$selectedPath.png';
+      await File(normalizedPath).writeAsBytes(byteData.buffer.asUint8List());
+      _showMessage('Icon exported to $normalizedPath');
+    } catch (error, stackTrace) {
+      debugPrint('Export failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _showMessage('Export failed. Please try again.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -202,9 +252,9 @@ class _StudioPageState extends State<StudioPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.gold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
             child: const Text('Premium', style: TextStyle(fontSize: 11, color: AppColors.gold, fontWeight: FontWeight.w600)),
           ),
@@ -263,7 +313,7 @@ class _StudioPageState extends State<StudioPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _exportIcon,
               icon: const Icon(Icons.download, size: 18),
               label: const Text('Export Icon', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -277,7 +327,7 @@ class _StudioPageState extends State<StudioPage> {
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
-              style: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11),
+              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11),
             ),
           ],
         ],
@@ -345,10 +395,10 @@ class _StatItem extends StatelessWidget {
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withOpacity(0.1),
+                  color: AppColors.gold.withValues(alpha: 0.1),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
@@ -387,7 +437,7 @@ class _StatItem extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.1),
+                      color: AppColors.gold.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.upload, color: AppColors.gold, size: 24),
@@ -420,6 +470,7 @@ class _StatItem extends StatelessWidget {
     shader.setFloat(10, 0.3);
     shader.setFloat(11, -0.5);
     shader.setFloat(12, 0.5);
+    shader.setFloat(13, state.rotation * (3.14159265359 / 180.0));
   }
 
   Widget _buildPlaceholder() {
@@ -457,7 +508,7 @@ class DiamondPlaceholderPainter extends CustomPainter {
     canvas.drawPath(path, paint);
     
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     
@@ -520,7 +571,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withOpacity(0.1) : AppColors.uploadZone,
+        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
       ),
@@ -555,6 +606,4 @@ class PaywallModal extends StatelessWidget {
       ),
     );
   }
-}
-
 }
