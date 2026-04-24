@@ -57,6 +57,8 @@ float sparkle(vec2 uv, float time, float intensity) {
   return s;
 }
 
+// Box blur: max 9x9 tap grid (runs on GPU; separable passes would halve taps
+// but require an intermediate render target not available in single-pass shaders).
 vec4 blurSample(sampler2D tex, vec2 uv, float radius, vec2 texelSize) {
   if (radius < 0.5) return texture(tex, uv);
   vec4 col = vec4(0.0);

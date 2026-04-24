@@ -68,8 +68,8 @@ GO-LIVE CHECKLIST (release-process tasks still pending)
 [ ] Android keystore + release signing configured in build.gradle
 [ ] iOS distribution certificate + provisioning profile in Xcode
 [ ] App Store / Play Store listing (screenshots, description, rating)
-[ ] Stats bar accuracy: "Format: Vector" should read "PNG";
-    "FPS: 120" is misleading for a static icon editor
+[x] Stats bar accuracy: "Format: PNG" (was "Vector") and "Export: 3x" (was "FPS: 120")
+    — corrected in both lib/main.dart and shaders/lib/main.dart
 [ ] flutter build appbundle / flutter build ipa verified on real device
 [ ] TestFlight / Internal test track distributed before public release
 
