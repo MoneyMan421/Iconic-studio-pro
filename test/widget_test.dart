@@ -50,6 +50,18 @@ void main() {
     test('background colour is correct', () {
       expect(AppColors.background.toARGB32(), const Color(0xFF0A0A0A).toARGB32());
     });
+
+    test('accent colour is correct', () {
+      expect(AppColors.accent.toARGB32(), const Color(0xFF00D4FF).toARGB32());
+    });
+
+    test('goldDark colour is correct', () {
+      expect(AppColors.goldDark.toARGB32(), const Color(0xFF8B6914).toARGB32());
+    });
+
+    test('backgroundGradientMid colour is correct', () {
+      expect(AppColors.backgroundGradientMid.toARGB32(), const Color(0xFF0D1B2A).toARGB32());
+    });
   });
 
   group('DiamondApp', () {

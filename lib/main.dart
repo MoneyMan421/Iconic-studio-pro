@@ -14,14 +14,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ---------------------------------------------------------------------------
 
 class AppColors {
-  static const Color background   = Color(0xFF0A0A0A);
-  static const Color panel        = Color(0xFF1A1A1A);
-  static const Color panelBorder  = Color(0xFF2A2A2A);
-  static const Color gold         = Color(0xFFD4AF37);
-  static const Color goldLight    = Color(0xFFF4E4BC);
-  static const Color textPrimary  = Color(0xFFFFFFFF);
-  static const Color textSecondary= Color(0xFF888888);
-  static const Color uploadZone   = Color(0xFF111111);
+  static const Color background          = Color(0xFF0A0A0A);
+  static const Color backgroundGradientMid = Color(0xFF0D1B2A);
+  static const Color panel               = Color(0xFF1A1A1A);
+  static const Color panelBorder         = Color(0xFF2A2A2A);
+  static const Color gold                = Color(0xFFD4AF37);
+  static const Color goldLight           = Color(0xFFF4E4BC);
+  static const Color goldDark            = Color(0xFF8B6914);
+  static const Color accent              = Color(0xFF00D4FF);
+  static const Color textPrimary         = Color(0xFFFFFFFF);
+  static const Color textSecondary       = Color(0xFF888888);
+  static const Color uploadZone          = Color(0xFF111111);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,9 +126,9 @@ class DiamondApp extends StatelessWidget {
       title: 'Iconic Studio Pro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0a0a0a),
+        scaffoldBackgroundColor: AppColors.background,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00d4ff),
+          seedColor: AppColors.accent,
           brightness: Brightness.dark,
         ),
       ),
@@ -253,7 +256,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
             child: ListTile(
               leading: const Icon(
                 Icons.diamond_outlined,
-                color: Color(0xFF00d4ff),
+                color: AppColors.accent,
               ),
               title:    Text(product['name'] as String),
               subtitle: Text('${product['price']} ETH'),
@@ -289,7 +292,7 @@ class ProductDetailPage extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFF00d4ff).withValues(alpha: 0.3),
+                  color: AppColors.accent.withValues(alpha: 0.3),
                 ),
               ),
               child: const Center(
@@ -493,8 +496,8 @@ class _StudioPageState extends State<StudioPage> {
               height:  200,
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color:  Color(0xFF1A1A1A),
-                border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
+                color:  AppColors.panel,
+                border: Border(top: BorderSide(color: AppColors.panelBorder)),
               ),
               child: SingleChildScrollView(
                 child: Text(
@@ -502,7 +505,7 @@ class _StudioPageState extends State<StudioPage> {
                   style: const TextStyle(
                     fontFamily: 'monospace',
                     fontSize:   12,
-                    color:      Color(0xFF00d4ff),
+                    color:      AppColors.accent,
                   ),
                 ),
               ),
@@ -511,7 +514,7 @@ class _StudioPageState extends State<StudioPage> {
           Container(
             padding:    const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
+              border: Border(top: BorderSide(color: AppColors.panelBorder)),
             ),
             child: Row(
               children: [
@@ -1268,7 +1271,7 @@ class DiamondPlaceholderPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin:  Alignment.topLeft,
         end:    Alignment.bottomRight,
-        colors: [AppColors.goldLight, AppColors.gold, Color(0xFF8B6914)],
+        colors: [AppColors.goldLight, AppColors.gold, AppColors.goldDark],
       ).createShader(rect)
       ..style = PaintingStyle.fill;
 
@@ -1432,7 +1435,7 @@ class ShaderBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin:  Alignment.topLeft,
           end:    Alignment.bottomRight,
-          colors: [Color(0xFF0a0a0a), Color(0xFF0d1b2a), Color(0xFF0a0a0a)],
+          colors: [AppColors.background, AppColors.backgroundGradientMid, AppColors.background],
         ),
       ),
       child: child,
@@ -1461,7 +1464,7 @@ class _NavButton extends StatelessWidget {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFF00d4ff), width: 1),
+            side: const BorderSide(color: AppColors.accent, width: 1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
