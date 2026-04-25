@@ -63,10 +63,10 @@ void main() {
       const source = AppColors.gold;
       final updated = source.withValues(alpha: 0.2);
 
-      expect(updated.red, source.red);
-      expect(updated.green, source.green);
-      expect(updated.blue, source.blue);
-      expect(updated.alpha, closeTo((0.2 * 255).round(), 1));
+      expect(updated.r, source.r);
+      expect(updated.g, source.g);
+      expect(updated.b, source.b);
+      expect((updated.a * 255.0).round(), closeTo((0.2 * 255).round(), 1));
     });
   });
 
