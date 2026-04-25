@@ -12,6 +12,7 @@ uniform float uSaturation;
 uniform float uBlur;
 uniform vec3 uLightPosition;
 uniform float uRotation;
+uniform float uScale;
 uniform sampler2D uUserImage;
 
 out vec4 fragColor;
@@ -50,9 +51,10 @@ void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
     vec2 uv        = fragCoord / uSize;
 
-    // ── Rotation ──────────────────────────────────────────────────────────
+    // ── Rotation & Scale ──────────────────────────────────────────────────
     vec2 centered   = uv - 0.5;
     centered        = rotate2D(centered, uRotation);
+    centered       /= uScale;
     vec2 rotatedUv  = centered + 0.5;
 
     // ── Diamond facet normals (Voronoi-based) ─────────────────────────────
