@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'auth_screen.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0A0A0A);
@@ -86,7 +88,7 @@ class IconStudioPro extends StatelessWidget {
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
       ),
-      home: const StudioPage(),
+      home: const AuthGate(child: StudioPage()),
     );
   }
 }
@@ -159,24 +161,29 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      final selectedPath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save exported icon',
-        fileName: 'iconic_export.png',
-        type: FileType.custom,
-        allowedExtensions: ['png'],
-      );
+      String? savePath;
 
-      if (selectedPath == null) {
-        return;
+      if (Platform.isAndroid || Platform.isIOS) {
+        // Mobile: save to the downloads / documents directory
+        final dir = Platform.isAndroid
+            ? (await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory())
+            : await getApplicationDocumentsDirectory();
+        savePath = '${dir.path}/iconic_export_${DateTime.now().millisecondsSinceEpoch}.png';
+      } else {
+        // Desktop/web: show native save dialog
+        final selectedPath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save exported icon',
+          fileName: 'iconic_export.png',
+          type: FileType.custom,
+          allowedExtensions: ['png'],
+        );
+        if (selectedPath == null) return;
+        final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
+        savePath = hasPngExtension ? selectedPath : '$selectedPath.png';
       }
 
-      final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
-      final normalizedPath = hasPngExtension
-          ? selectedPath
-          : '$selectedPath.png';
-      await File(normalizedPath).writeAsBytes(byteData.buffer.asUint8List());
-
-      _showMessage('Icon exported to $normalizedPath');
+      await File(savePath).writeAsBytes(byteData.buffer.asUint8List());
+      _showMessage('Icon exported to $savePath');
     } catch (error, stackTrace) {
       debugPrint('Export failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -191,6 +198,15 @@ class _StudioPageState extends State<StudioPage> {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return isMobile ? _buildMobileLayout() : _buildDesktopLayout();
+      },
+    );
+  }
+
+  Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Row(
@@ -205,25 +221,7 @@ class _StudioPageState extends State<StudioPage> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSection('TRANSFORM'),
-                        _buildSlider('Scale', state.scale, 0, 100, (v) => setState(() => state = state.copyWith(scale: v)), suffix: '%'),
-                        _buildSlider('Rotation', state.rotation, -180, 180, (v) => setState(() => state = state.copyWith(rotation: v)), suffix: '°'),
-                        const SizedBox(height: 32),
-                        _buildSection('ADJUSTMENTS'),
-                        _buildSlider('Brightness', state.brightness, 0, 200, (v) => setState(() => state = state.copyWith(brightness: v)), suffix: '%'),
-                        _buildSlider('Contrast', state.contrast, 0, 200, (v) => setState(() => state = state.copyWith(contrast: v)), suffix: '%'),
-                        _buildSlider('Saturation', state.saturation, 0, 200, (v) => setState(() => state = state.copyWith(saturation: v)), suffix: '%'),
-                        _buildSlider('Blur', state.blur, 0, 20, (v) => setState(() => state = state.copyWith(blur: v)), suffix: 'px'),
-                        const SizedBox(height: 32),
-                        _buildSection('DIAMOND PHYSICS'),
-                        _buildSlider('Refraction', state.refractionIndex, 1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex: v)), decimals: 2),
-                        _buildSlider('Sparkle', state.sparkleIntensity, 0, 2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
-                        _buildSlider('Facet Depth', state.facetDepth, 0, 1.0, (v) => setState(() => state = state.copyWith(facetDepth: v))),
-                      ],
-                    ),
+                    child: _buildControls(),
                   ),
                 ),
                 _buildExportButton(),
@@ -247,6 +245,66 @@ class _StudioPageState extends State<StudioPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    Center(
+                      child: RepaintBoundary(
+                        key: _previewBoundaryKey,
+                        child: PreviewCanvas(state: state, onPickImage: _pickImage),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildControls(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              color: AppColors.panel,
+              child: _buildExportButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSection('TRANSFORM'),
+        _buildSlider('Scale', state.scale, 0, 100, (v) => setState(() => state = state.copyWith(scale: v)), suffix: '%'),
+        _buildSlider('Rotation', state.rotation, -180, 180, (v) => setState(() => state = state.copyWith(rotation: v)), suffix: '°'),
+        const SizedBox(height: 32),
+        _buildSection('ADJUSTMENTS'),
+        _buildSlider('Brightness', state.brightness, 0, 200, (v) => setState(() => state = state.copyWith(brightness: v)), suffix: '%'),
+        _buildSlider('Contrast', state.contrast, 0, 200, (v) => setState(() => state = state.copyWith(contrast: v)), suffix: '%'),
+        _buildSlider('Saturation', state.saturation, 0, 200, (v) => setState(() => state = state.copyWith(saturation: v)), suffix: '%'),
+        _buildSlider('Blur', state.blur, 0, 20, (v) => setState(() => state = state.copyWith(blur: v)), suffix: 'px'),
+        const SizedBox(height: 32),
+        _buildSection('DIAMOND PHYSICS'),
+        _buildSlider('Refraction', state.refractionIndex, 1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex: v)), decimals: 2),
+        _buildSlider('Sparkle', state.sparkleIntensity, 0, 2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
+        _buildSlider('Facet Depth', state.facetDepth, 0, 1.0, (v) => setState(() => state = state.copyWith(facetDepth: v))),
+      ],
     );
   }
 
