@@ -8,6 +8,7 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'auth_screen.dart';
+import 'billing_service.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0A0A0A);
@@ -109,8 +110,24 @@ class _StudioPageState extends State<StudioPage> {
   static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
+  @override
+  void initState() {
+    super.initState();
+    BillingService.instance.init();
+    BillingService.instance.isPro.addListener(_onProStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    BillingService.instance.isPro.removeListener(_onProStatusChanged);
+    super.dispose();
+  }
+
+  void _onProStatusChanged() => setState(() {});
+
   Future<void> _pickImage() async {
-    if (importsUsed >= freeImportLimit) {
+    if (!BillingService.instance.isPro.value &&
+        importsUsed >= freeImportLimit) {
       _showPaywall();
       return;
     }
@@ -132,7 +149,7 @@ class _StudioPageState extends State<StudioPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
+      builder: (_) => const PaywallModal(),
     );
   }
 
@@ -409,7 +426,7 @@ class _StudioPageState extends State<StudioPage> {
               ),
             ),
           ),
-          if (importsUsed > 0) ...[
+          if (importsUsed > 0 && !BillingService.instance.isPro.value) ...[
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
@@ -629,12 +646,35 @@ class _PreviewCanvasState extends State<PreviewCanvas>
   }
 }
 
-class PaywallModal extends StatelessWidget {
-  final VoidCallback onUpgrade;
-  const PaywallModal({super.key, required this.onUpgrade});
+class PaywallModal extends StatefulWidget {
+  const PaywallModal({super.key});
+
+  @override
+  State<PaywallModal> createState() => _PaywallModalState();
+}
+
+class _PaywallModalState extends State<PaywallModal> {
+  @override
+  void initState() {
+    super.initState();
+    BillingService.instance.isPro.addListener(_onProChanged);
+  }
+
+  @override
+  void dispose() {
+    BillingService.instance.isPro.removeListener(_onProChanged);
+    super.dispose();
+  }
+
+  void _onProChanged() {
+    if (BillingService.instance.isPro.value && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final billing = BillingService.instance;
     return Dialog(
       backgroundColor: AppColors.panel,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -648,25 +688,51 @@ class PaywallModal extends StatelessWidget {
             const SizedBox(height: 16),
             const Text('Unlock Pro', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
-            const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
+            const Text('You\'ve used your 2 free imports. Upgrade to continue.',
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
             _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
             const SizedBox(height: 12),
             _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: onUpgrade,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            if (billing.products.isNotEmpty)
+              ...billing.products.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => billing.buy(p),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('${p.title} — ${p.price}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
                 ),
-                child: const Text('Upgrade Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ))
+            else
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold.withValues(alpha: 0.4),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Loading plans…',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
               ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Maybe Later',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ),
           ],
         ),
