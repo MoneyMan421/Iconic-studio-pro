@@ -12,6 +12,7 @@ uniform float uSaturation;
 uniform float uBlur;
 uniform vec3 uLightPosition;
 uniform float uRotation;
+uniform float uScale;
 uniform sampler2D uUserImage;
 
 out vec4 fragColor;
@@ -53,7 +54,10 @@ void main() {
     // ── Rotation ──────────────────────────────────────────────────────────
     vec2 centered   = uv - 0.5;
     centered        = rotate2D(centered, uRotation);
-    vec2 rotatedUv  = centered + 0.5;
+
+    // ── Scale (zoom): applied only to image-sample UV, not facet pattern ──
+    vec2 scaledCentered = centered / max(uScale, 0.05);
+    vec2 rotatedUv  = scaledCentered + 0.5;
 
     // ── Diamond facet normals (Voronoi-based) ─────────────────────────────
     vec2 facetUv = centered * 5.0;

@@ -20,16 +20,16 @@ class AppColors {
 }
 
 class EditorState {
-  double scale;
-  double rotation;
-  double brightness;
-  double contrast;
-  double saturation;
-  double blur;
-  double refractionIndex;
-  double sparkleIntensity;
-  double facetDepth;
-  File? userImage;
+  final double scale;
+  final double rotation;
+  final double brightness;
+  final double contrast;
+  final double saturation;
+  final double blur;
+  final double refractionIndex;
+  final double sparkleIntensity;
+  final double facetDepth;
+  final File? userImage;
 
   EditorState({
     this.scale = 50,
@@ -625,6 +625,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
     shader.setFloat(11, lightY);                                           // uLightPosition.y
     shader.setFloat(12, 1.0);                                              // uLightPosition.z
     shader.setFloat(13, s.rotation * (math.pi / 180.0));                  // uRotation (radians)
+    shader.setFloat(14, s.scale / 50.0);                                   // uScale (1.0 = default, <1 zoom-out, >1 zoom-in)
   }
 }
 
