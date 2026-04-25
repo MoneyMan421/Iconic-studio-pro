@@ -83,7 +83,7 @@ class IconStudioPro extends StatelessWidget {
           activeTrackColor: AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor: AppColors.gold,
-          overlayColor: AppColors.gold.withOpacity(0.2),
+          overlayColor: AppColors.gold.withValues(alpha: 0.2),
           trackHeight: 4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
@@ -337,9 +337,9 @@ class _StudioPageState extends State<StudioPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.gold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
             child: const Text('Premium', style: TextStyle(fontSize: 11, color: AppColors.gold, fontWeight: FontWeight.w600)),
           ),
@@ -412,7 +412,7 @@ class _StudioPageState extends State<StudioPage> {
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
-              style: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11),
+              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11),
             ),
           ],
         ],
@@ -677,7 +677,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withOpacity(0.1) : AppColors.uploadZone,
+        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
       ),

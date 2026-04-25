@@ -1,0 +1,11 @@
+# Copy this file to android/key.properties and fill in your keystore details.
+# DO NOT commit key.properties to source control.
+#
+# Generate a keystore with:
+#   keytool -genkey -v -keystore iconic-release.keystore \
+#     -alias iconic -keyalg RSA -keysize 2048 -validity 10000
+#
+storePassword=<your-keystore-password>
+keyPassword=<your-key-password>
+keyAlias=iconic
+storeFile=<absolute-or-relative-path-to>/iconic-release.keystore
