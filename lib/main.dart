@@ -21,16 +21,16 @@ class AppColors {
 }
 
 class EditorState {
-  double scale;
-  double rotation;
-  double brightness;
-  double contrast;
-  double saturation;
-  double blur;
-  double refractionIndex;
-  double sparkleIntensity;
-  double facetDepth;
-  File? userImage;
+  final double scale;
+  final double rotation;
+  final double brightness;
+  final double contrast;
+  final double saturation;
+  final double blur;
+  final double refractionIndex;
+  final double sparkleIntensity;
+  final double facetDepth;
+  final File? userImage;
 
   EditorState({
     this.scale = 50,
