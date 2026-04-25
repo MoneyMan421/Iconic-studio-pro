@@ -27,7 +27,7 @@ flutter pub get
 flutter run
 ```
 
-Tested with Flutter stable channel (≥ 3.0).
+Tested with a recent Flutter stable release. Flutter 3.0 is not supported — this project uses newer `Color` APIs such as `Color.withValues(...)` and `Color.toARGB32()`.
 
 ---
 

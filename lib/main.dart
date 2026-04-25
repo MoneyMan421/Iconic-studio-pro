@@ -134,10 +134,11 @@ class DiamondApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/':            (context) => const HomePage(),
-        '/marketplace': (context) => const MarketplacePage(),
-        '/studio':      (context) => const StudioPage(),
-        '/dashboard':   (context) => const DashboardPage(),
+        '/':              (context) => const HomePage(),
+        '/marketplace':   (context) => const MarketplacePage(),
+        '/studio':        (context) => const IconEditorPage(),
+        '/shader-studio': (context) => const StudioPage(),
+        '/dashboard':     (context) => const DashboardPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/product/') ?? false) {
@@ -337,10 +338,12 @@ class _StudioPageState extends State<StudioPage> {
         type:          FileType.any,
         allowMultiple: false,
       );
+      if (!mounted) return;
 
       if (result != null && result.files.single.path != null) {
         final file   = File(result.files.single.path!);
         final source = await file.readAsString();
+        if (!mounted) return;
         setState(() => _shaderSource = source);
       }
     } catch (error, stackTrace) {
@@ -667,6 +670,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
   Future<void> _loadPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       setState(() {
         isPro       = prefs.getBool(_kIsPro)       ?? false;
         importsUsed = prefs.getInt(_kImportsUsed)  ?? 0;
