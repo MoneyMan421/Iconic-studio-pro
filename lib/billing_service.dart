@@ -98,14 +98,13 @@ class BillingService {
   /// Initiates a purchase for [product].
   Future<void> buy(BillingProduct product) async {
     final param = PurchaseParam(productDetails: product._details);
-    // Subscriptions and one-time purchases use different calls.
-    if (product._details.id == _monthlyId) {
-      await _iap.buyNonConsumable(purchaseParam: param);
-    } else {
-      await _iap.buyNonConsumable(purchaseParam: param);
-    }
+    await _iap.buyNonConsumable(purchaseParam: param);
   }
 
+  /// Cancels the purchase stream subscription.
+  ///
+  /// This is provided for testing purposes. In production the singleton lives
+  /// for the lifetime of the app and does not need explicit cleanup.
   void dispose() {
     _subscription?.cancel();
     isPro.dispose();

@@ -720,8 +720,8 @@ class _PaywallModalState extends State<PaywallModal> {
                 child: ElevatedButton(
                   onPressed: null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold.withValues(alpha: 0.4),
-                    foregroundColor: Colors.black,
+                    disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.4),
+                    disabledForegroundColor: Colors.black54,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Loading plans…',
