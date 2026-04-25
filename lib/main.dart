@@ -30,6 +30,7 @@ class EditorState {
   double refractionIndex;
   double sparkleIntensity;
   double facetDepth;
+  double envReflection;
   File? userImage;
 
   EditorState({
@@ -42,6 +43,7 @@ class EditorState {
     this.refractionIndex = 2.42,
     this.sparkleIntensity = 0.8,
     this.facetDepth = 0.6,
+    this.envReflection = 0.5,
     this.userImage,
   });
 
@@ -55,6 +57,7 @@ class EditorState {
     double? refractionIndex,
     double? sparkleIntensity,
     double? facetDepth,
+    double? envReflection,
     File? userImage,
   }) => EditorState(
     scale: scale ?? this.scale,
@@ -66,6 +69,7 @@ class EditorState {
     refractionIndex: refractionIndex ?? this.refractionIndex,
     sparkleIntensity: sparkleIntensity ?? this.sparkleIntensity,
     facetDepth: facetDepth ?? this.facetDepth,
+    envReflection: envReflection ?? this.envReflection,
     userImage: userImage ?? this.userImage,
   );
 }
@@ -313,6 +317,7 @@ class _StudioPageState extends State<StudioPage> {
         _buildSlider('Refraction', state.refractionIndex, 1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex: v)), decimals: 2),
         _buildSlider('Sparkle', state.sparkleIntensity, 0, 2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
         _buildSlider('Facet Depth', state.facetDepth, 0, 1.0, (v) => setState(() => state = state.copyWith(facetDepth: v))),
+        _buildSlider('Env Reflection', state.envReflection, 0, 1.0, (v) => setState(() => state = state.copyWith(envReflection: v))),
       ],
     );
   }
@@ -626,6 +631,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
     shader.setFloat(11, lightY);                                           // uLightPosition.y
     shader.setFloat(12, 1.0);                                              // uLightPosition.z
     shader.setFloat(13, s.rotation * (math.pi / 180.0));                  // uRotation (radians)
+    shader.setFloat(14, s.envReflection);                                  // uEnvReflection
   }
 }
 
