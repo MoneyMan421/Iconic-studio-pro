@@ -826,11 +826,24 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
   }
 
   Future<Directory> _resolveExportDirectory() async {
-    try {
-      final dir = await getDownloadsDirectory();
-      if (dir != null) return dir;
-    } catch (_) {}
-    return getApplicationDocumentsDirectory();
+    if (Platform.isAndroid) {
+      Directory? dir;
+      try {
+        dir = await getExternalStorageDirectory();
+      } catch (_) {
+        dir = null;
+      }
+      return dir ?? await getApplicationDocumentsDirectory();
+    } else if (Platform.isIOS) {
+      return getApplicationDocumentsDirectory();
+    } else {
+      // Desktop: prefer the downloads folder, fall back to documents.
+      try {
+        final dir = await getDownloadsDirectory();
+        if (dir != null) return dir;
+      } catch (_) {}
+      return getApplicationDocumentsDirectory();
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -878,6 +891,15 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return isMobile ? _buildMobileLayout() : _buildDesktopLayout();
+      },
+    );
+  }
+
+  Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Row(
@@ -893,25 +915,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSection('TRANSFORM'),
-                        _buildSlider('Scale',    state.scale,    0,    100,  (v) => setState(() => state = state.copyWith(scale:    v)), suffix: '%'),
-                        _buildSlider('Rotation', state.rotation, -180, 180,  (v) => setState(() => state = state.copyWith(rotation: v)), suffix: '°'),
-                        const SizedBox(height: 32),
-                        _buildSection('ADJUSTMENTS'),
-                        _buildSlider('Brightness', state.brightness, 0,   200, (v) => setState(() => state = state.copyWith(brightness: v)), suffix: '%'),
-                        _buildSlider('Contrast',   state.contrast,   0,   200, (v) => setState(() => state = state.copyWith(contrast:   v)), suffix: '%'),
-                        _buildSlider('Saturation', state.saturation, 0,   200, (v) => setState(() => state = state.copyWith(saturation: v)), suffix: '%'),
-                        _buildSlider('Blur',       state.blur,       0,   20,  (v) => setState(() => state = state.copyWith(blur:       v)), suffix: 'px'),
-                        const SizedBox(height: 32),
-                        _buildSection('DIAMOND PHYSICS'),
-                        _buildSlider('Refraction',   state.refractionIndex,  1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex:  v)), decimals: 2),
-                        _buildSlider('Sparkle',      state.sparkleIntensity, 0,   2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
-                        _buildSlider('Facet Depth',  state.facetDepth,       0,   1.0, (v) => setState(() => state = state.copyWith(facetDepth:       v))),
-                      ],
-                    ),
+                    child: _buildControls(),
                   ),
                 ),
                 _buildExportButton(),
@@ -937,6 +941,67 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    Center(
+                      child: PreviewCanvas(
+                        state:      state,
+                        previewKey: _previewKey,
+                        onUpload:   _pickImage,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildControls(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              color: AppColors.panel,
+              child: _buildExportButton(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSection('TRANSFORM'),
+        _buildSlider('Scale',    state.scale,    0,    100,  (v) => setState(() => state = state.copyWith(scale:    v)), suffix: '%'),
+        _buildSlider('Rotation', state.rotation, -180, 180,  (v) => setState(() => state = state.copyWith(rotation: v)), suffix: '°'),
+        const SizedBox(height: 32),
+        _buildSection('ADJUSTMENTS'),
+        _buildSlider('Brightness', state.brightness, 0,   200, (v) => setState(() => state = state.copyWith(brightness: v)), suffix: '%'),
+        _buildSlider('Contrast',   state.contrast,   0,   200, (v) => setState(() => state = state.copyWith(contrast:   v)), suffix: '%'),
+        _buildSlider('Saturation', state.saturation, 0,   200, (v) => setState(() => state = state.copyWith(saturation: v)), suffix: '%'),
+        _buildSlider('Blur',       state.blur,       0,   20,  (v) => setState(() => state = state.copyWith(blur:       v)), suffix: 'px'),
+        const SizedBox(height: 32),
+        _buildSection('DIAMOND PHYSICS'),
+        _buildSlider('Refraction',  state.refractionIndex,  1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex:  v)), decimals: 2),
+        _buildSlider('Sparkle',     state.sparkleIntensity, 0,   2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
+        _buildSlider('Facet Depth', state.facetDepth,       0,   1.0, (v) => setState(() => state = state.copyWith(facetDepth:       v))),
+      ],
     );
   }
 
