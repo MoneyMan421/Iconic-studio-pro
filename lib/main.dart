@@ -431,7 +431,7 @@ class _StudioPageState extends State<StudioPage> {
         children: [
           _StatItem(label: 'Quality', value: 'Ultra HD'),
           SizedBox(width: 48),
-          _StatItem(label: 'Format', value: 'Vector'),
+          _StatItem(label: 'Format', value: 'PNG'),
           SizedBox(width: 48),
           _StatItem(label: 'FPS', value: '120'),
         ],
