@@ -165,9 +165,17 @@ class _StudioPageState extends State<StudioPage> {
 
       if (Platform.isAndroid || Platform.isIOS) {
         // Mobile: save to the downloads / documents directory
-        final dir = Platform.isAndroid
-            ? (await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory())
-            : await getApplicationDocumentsDirectory();
+        Directory? dir;
+        if (Platform.isAndroid) {
+          try {
+            dir = await getExternalStorageDirectory();
+          } catch (_) {
+            dir = null;
+          }
+          dir ??= await getApplicationDocumentsDirectory();
+        } else {
+          dir = await getApplicationDocumentsDirectory();
+        }
         savePath = '${dir.path}/iconic_export_${DateTime.now().millisecondsSinceEpoch}.png';
       } else {
         // Desktop/web: show native save dialog
