@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
@@ -148,11 +149,12 @@ class _StudioPageState extends State<StudioPage> {
     }
 
     try {
-      final boundary = boundaryContext.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        _showMessage('Could not capture preview.');
+      final renderObject = boundaryContext.findRenderObject();
+      if (renderObject is! RenderRepaintBoundary) {
+        _showMessage('Preview not ready');
         return;
       }
+      final boundary = renderObject;
 
       final image = await boundary.toImage(pixelRatio: exportPixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -611,20 +613,21 @@ class _PreviewCanvasState extends State<PreviewCanvas>
     final lightX = _lightOrbitRadius * math.cos(_elapsedSeconds * 0.4);
     final lightY = _lightOrbitRadius * math.sin(_elapsedSeconds * 0.4);
 
-    shader.setFloat(0, size.width);                                        // uSize.x
-    shader.setFloat(1, size.height);                                       // uSize.y
-    shader.setFloat(2, _elapsedSeconds);                                   // uTime
-    shader.setFloat(3, s.refractionIndex);                                 // uRefractionIndex
-    shader.setFloat(4, s.sparkleIntensity);                                // uSparkleIntensity
-    shader.setFloat(5, s.facetDepth);                                      // uFacetDepth
-    shader.setFloat(6, s.brightness / 100.0);                             // uBrightness
-    shader.setFloat(7, s.contrast / 100.0);                               // uContrast
-    shader.setFloat(8, s.saturation / 100.0);                             // uSaturation
-    shader.setFloat(9, s.blur);                                            // uBlur
-    shader.setFloat(10, lightX);                                           // uLightPosition.x
-    shader.setFloat(11, lightY);                                           // uLightPosition.y
-    shader.setFloat(12, 1.0);                                              // uLightPosition.z
-    shader.setFloat(13, s.rotation * (math.pi / 180.0));                  // uRotation (radians)
+    int i = 0;
+    shader.setFloat(i++, size.width);                                      // uSize.x
+    shader.setFloat(i++, size.height);                                     // uSize.y
+    shader.setFloat(i++, _elapsedSeconds);                                 // uTime
+    shader.setFloat(i++, s.refractionIndex);                               // uRefractionIndex
+    shader.setFloat(i++, s.sparkleIntensity);                              // uSparkleIntensity
+    shader.setFloat(i++, s.facetDepth);                                    // uFacetDepth
+    shader.setFloat(i++, s.brightness / 100.0);                           // uBrightness
+    shader.setFloat(i++, s.contrast / 100.0);                             // uContrast
+    shader.setFloat(i++, s.saturation / 100.0);                           // uSaturation
+    shader.setFloat(i++, s.blur);                                          // uBlur
+    shader.setFloat(i++, lightX);                                          // uLightPosition.x
+    shader.setFloat(i++, lightY);                                          // uLightPosition.y
+    shader.setFloat(i++, 1.0);                                             // uLightPosition.z
+    shader.setFloat(i++, s.rotation * (math.pi / 180.0));                 // uRotation (radians)
   }
 }
 
