@@ -6,9 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iconic_studio_pro/main.dart';
 
 void main() {
+  int colorChannel(double channel) => (channel * 255.0).round().clamp(0, 255);
+
   group('App launch smoke', () {
     testWidgets('renders key studio UI', (tester) async {
-      await tester.pumpWidget(const IconStudioPro());
+      await tester.pumpWidget(const MaterialApp(home: StudioPage()));
 
       expect(find.text('IconStudio'), findsOneWidget);
       expect(find.text('Export Icon'), findsOneWidget);
@@ -31,7 +33,7 @@ void main() {
 
   group('Export button presence', () {
     testWidgets('export button is present and tappable', (tester) async {
-      await tester.pumpWidget(const IconStudioPro());
+      await tester.pumpWidget(const MaterialApp(home: StudioPage()));
 
       final exportButton = find.widgetWithText(ElevatedButton, 'Export Icon');
       expect(exportButton, findsOneWidget);
@@ -63,10 +65,10 @@ void main() {
       const source = AppColors.gold;
       final updated = source.withValues(alpha: 0.2);
 
-      expect(updated.red, source.red);
-      expect(updated.green, source.green);
-      expect(updated.blue, source.blue);
-      expect(updated.alpha, closeTo((0.2 * 255).round(), 1));
+      expect(colorChannel(updated.r), colorChannel(source.r));
+      expect(colorChannel(updated.g), colorChannel(source.g));
+      expect(colorChannel(updated.b), colorChannel(source.b));
+      expect(colorChannel(updated.a), closeTo((0.2 * 255).round(), 1));
     });
   });
 
