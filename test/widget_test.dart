@@ -8,7 +8,7 @@ import 'package:iconic_studio_pro/main.dart';
 void main() {
   group('App launch smoke', () {
     testWidgets('renders key studio UI', (tester) async {
-      await tester.pumpWidget(const IconStudioPro());
+      await tester.pumpWidget(MaterialApp(home: const StudioPage()));
 
       expect(find.text('IconStudio'), findsOneWidget);
       expect(find.text('Export Icon'), findsOneWidget);
@@ -31,7 +31,7 @@ void main() {
 
   group('Export button presence', () {
     testWidgets('export button is present and tappable', (tester) async {
-      await tester.pumpWidget(const IconStudioPro());
+      await tester.pumpWidget(MaterialApp(home: const StudioPage()));
 
       final exportButton = find.widgetWithText(ElevatedButton, 'Export Icon');
       expect(exportButton, findsOneWidget);
