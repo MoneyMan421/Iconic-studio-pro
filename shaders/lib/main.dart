@@ -78,7 +78,7 @@ class IconStudioPro extends StatelessWidget {
           activeTrackColor: AppColors.gold,
           inactiveTrackColor: AppColors.panelBorder,
           thumbColor: AppColors.gold,
-          overlayColor: AppColors.gold.withOpacity(0.2),
+          overlayColor: AppColors.gold.withValues(alpha: 0.2),
           trackHeight: 4,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
@@ -202,9 +202,9 @@ class _StudioPageState extends State<StudioPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.gold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
             child: const Text('Premium', style: TextStyle(fontSize: 11, color: AppColors.gold, fontWeight: FontWeight.w600)),
           ),
@@ -277,7 +277,7 @@ class _StudioPageState extends State<StudioPage> {
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
-              style: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11),
+              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11),
             ),
           ],
         ],
@@ -319,7 +319,10 @@ class _StatItem extends StatelessWidget {
         Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
       ],
     );
-  }class PreviewCanvas extends StatelessWidget {
+  }
+}
+
+class PreviewCanvas extends StatelessWidget {
   final EditorState state;
   const PreviewCanvas({super.key, required this.state});
 
@@ -345,10 +348,10 @@ class _StatItem extends StatelessWidget {
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.gold.withOpacity(0.1),
+                  color: AppColors.gold.withValues(alpha: 0.1),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
@@ -387,7 +390,7 @@ class _StatItem extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.1),
+                      color: AppColors.gold.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.upload, color: AppColors.gold, size: 24),
@@ -457,7 +460,7 @@ class DiamondPlaceholderPainter extends CustomPainter {
     canvas.drawPath(path, paint);
     
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     
@@ -520,7 +523,7 @@ class PaywallModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withOpacity(0.1) : AppColors.uploadZone,
+        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
       ),
@@ -555,6 +558,4 @@ class PaywallModal extends StatelessWidget {
       ),
     );
   }
-}
-
 }
