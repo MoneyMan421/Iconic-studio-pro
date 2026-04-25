@@ -237,7 +237,7 @@ class MarketplacePage extends StatefulWidget {
 }
 
 class _MarketplacePageState extends State<MarketplacePage> {
-  final List<Map<String, dynamic>> _products = [
+  static const List<Map<String, dynamic>> _products = [
     {'id': 'diamond-01', 'name': 'Prismatic Diamond', 'price': 2.5},
     {'id': 'diamond-02', 'name': 'Neon Cutter',       'price': 1.8},
     {'id': 'diamond-03', 'name': 'Crystal Matrix',    'price': 3.2},
@@ -414,7 +414,7 @@ class _StudioPageState extends State<StudioPage> {
       final result = await FilePicker.platform.saveFile(
         dialogTitle:       'Export Shader',
         fileName:          'diamond_master.frag',
-        allowedExtensions: ['frag', 'glsl'],
+        allowedExtensions: const ['frag', 'glsl'],
       );
 
       if (result != null) {
@@ -667,23 +667,35 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
   // Persistence
   // -------------------------------------------------------------------------
 
+  double _clampedDouble(SharedPreferences prefs, String key, double fallback, double min, double max) {
+    final v = prefs.getDouble(key);
+    if (v == null || !v.isFinite) return fallback;
+    return v.clamp(min, max).toDouble();
+  }
+
+  int _nonNegativeInt(SharedPreferences prefs, String key, {int fallback = 0}) {
+    final v = prefs.getInt(key);
+    if (v == null || v < 0) return fallback;
+    return v;
+  }
+
   Future<void> _loadPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
       setState(() {
-        isPro       = prefs.getBool(_kIsPro)       ?? false;
-        importsUsed = prefs.getInt(_kImportsUsed)  ?? 0;
+        isPro       = prefs.getBool(_kIsPro) ?? false;
+        importsUsed = _nonNegativeInt(prefs, _kImportsUsed);
         state = EditorState(
-          scale:            prefs.getDouble(_kScale)            ?? 50,
-          rotation:         prefs.getDouble(_kRotation)         ?? 0,
-          brightness:       prefs.getDouble(_kBrightness)       ?? 100,
-          contrast:         prefs.getDouble(_kContrast)         ?? 100,
-          saturation:       prefs.getDouble(_kSaturation)       ?? 100,
-          blur:             prefs.getDouble(_kBlur)             ?? 0,
-          refractionIndex:  prefs.getDouble(_kRefractionIndex)  ?? 2.42,
-          sparkleIntensity: prefs.getDouble(_kSparkleIntensity) ?? 0.8,
-          facetDepth:       prefs.getDouble(_kFacetDepth)       ?? 0.6,
+          scale:            _clampedDouble(prefs, _kScale,            50,   1,    100),
+          rotation:         _clampedDouble(prefs, _kRotation,         0,    -180, 180),
+          brightness:       _clampedDouble(prefs, _kBrightness,       100,  0,    200),
+          contrast:         _clampedDouble(prefs, _kContrast,         100,  0,    200),
+          saturation:       _clampedDouble(prefs, _kSaturation,       100,  0,    200),
+          blur:             _clampedDouble(prefs, _kBlur,             0,    0,    20),
+          refractionIndex:  _clampedDouble(prefs, _kRefractionIndex,  2.42, 1,    3),
+          sparkleIntensity: _clampedDouble(prefs, _kSparkleIntensity, 0.8,  0,    1),
+          facetDepth:       _clampedDouble(prefs, _kFacetDepth,       0.6,  0,    1),
         );
       });
     } catch (_) {
@@ -724,7 +736,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
     try {
       final result = await FilePicker.platform.pickFiles(
         type:          FileType.custom,
-        allowedExtensions: ['png', 'jpg', 'jpeg'],
+        allowedExtensions: const ['png', 'jpg', 'jpeg'],
         allowMultiple: false,
       );
       pickedFile = result?.files.single;
@@ -742,6 +754,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
       _showSnackBar('Could not open file picker: $error');
       return;
     }
+    if (!mounted) return;
 
     if (pickedFile == null || pickedFile.path == null) return;
 
@@ -769,6 +782,7 @@ class _IconEditorPageState extends State<IconEditorPage> with WidgetsBindingObse
       _showSnackBar('File is too large (${(fileSize / 1048576).toStringAsFixed(1)} MB). Maximum is 5 MB.');
       return;
     }
+    if (!mounted) return;
 
     setState(() {
       state = state.copyWith(userImage: file);
@@ -1212,7 +1226,7 @@ class PreviewCanvas extends StatelessWidget {
         scale: scaleFactor,
         child: ShaderBuilder(
           assetKey: 'shaders/diamond_master.frag',
-          (context, shader, child) => AnimatedSampler(
+          builder: (context, shader, child) => AnimatedSampler(
             (image, size, canvas) {
               _configureShader(shader, size);
               shader.setImageSampler(0, image);
@@ -1344,9 +1358,9 @@ class PaywallModal extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly',  '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier('Pro Monthly',  '\$4.99/mo', const ['Unlimited imports', 'All shaders', 'Cloud sync']),
             const SizedBox(height: 12),
-            _buildTier('Pro Lifetime', '\$49.99',   ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
+            _buildTier('Pro Lifetime', '\$49.99',   const ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
             SizedBox(
               width:  double.infinity,
@@ -1455,7 +1469,7 @@ class _NavButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
 
-  const _NavButton({required this.label, required this.onPressed});
+  const _NavButton({super.key, required this.label, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {

@@ -6,18 +6,18 @@ import 'package:iconic_studio_pro/main.dart';
 void main() {
   setUp(() {
     // Provide in-memory SharedPreferences so tests don't hit the filesystem.
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(const {});
   });
 
   group('EditorState', () {
     test('default values are correct', () {
       const state = EditorState();
-      expect(state.scale,            50);
-      expect(state.rotation,         0);
-      expect(state.brightness,       100);
-      expect(state.contrast,         100);
-      expect(state.saturation,       100);
-      expect(state.blur,             0);
+      expect(state.scale,            50.0);
+      expect(state.rotation,         0.0);
+      expect(state.brightness,       100.0);
+      expect(state.contrast,         100.0);
+      expect(state.saturation,       100.0);
+      expect(state.blur,             0.0);
       expect(state.refractionIndex,  2.42);
       expect(state.sparkleIntensity, 0.8);
       expect(state.facetDepth,       0.6);
@@ -27,7 +27,7 @@ void main() {
     test('copyWith changes only specified fields', () {
       const base = EditorState();
       final updated = base.copyWith(brightness: 150, blur: 5.0);
-      expect(updated.brightness,      150);
+      expect(updated.brightness,      150.0);
       expect(updated.blur,            5.0);
       // unchanged fields stay the same
       expect(updated.scale,           base.scale);
