@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Shared email validation regex.
+final _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+
+String? _validateEmail(String? v) {
+  if (v == null || v.trim().isEmpty) return 'Email is required';
+  if (!_emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
+  return null;
+}
+
 /// Simple in-app auth state. Persists login across restarts via SharedPreferences.
 class AuthState extends ChangeNotifier {
   bool _isLoggedIn = false;
@@ -204,7 +213,7 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: 380,
+                          height: 340,
                           child: TabBarView(
                             controller: _tabs,
                             children: [
@@ -296,12 +305,7 @@ class _SignUpFormState extends State<_SignUpForm> {
               label: 'Email',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Email is required';
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                if (!emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
-                return null;
-              },
+              validator: _validateEmail,
             ),
             const SizedBox(height: 14),
             _AuthField(
@@ -366,14 +370,11 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _obscurePass = true;
   bool _loading = false;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
-    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -408,29 +409,7 @@ class _LoginFormState extends State<_LoginForm> {
               label: 'Email',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Email is required';
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                if (!emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _passCtrl,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscurePass,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePass ? Icons.visibility_off : Icons.visibility,
-                  color: const Color(0xFF888888),
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscurePass = !_obscurePass),
-              ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
+              validator: _validateEmail,
             ),
             const Spacer(),
             _GoldButton(
