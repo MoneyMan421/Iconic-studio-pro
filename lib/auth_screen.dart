@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_colors.dart';
 
 /// Shared email validation regex.
 final _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
@@ -105,14 +106,14 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF0A0A0A),
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.diamond, color: Color(0xFFD4AF37), size: 56),
+            Icon(Icons.diamond, color: AppColors.gold, size: 56),
             SizedBox(height: 16),
-            CircularProgressIndicator(color: Color(0xFFD4AF37)),
+            CircularProgressIndicator(color: AppColors.gold),
           ],
         ),
       ),
@@ -149,7 +150,7 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -160,7 +161,7 @@ class _AuthScreenState extends State<AuthScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Logo
-                  const Icon(Icons.diamond, color: Color(0xFFD4AF37), size: 64),
+                  const Icon(Icons.diamond, color: AppColors.gold, size: 64),
                   const SizedBox(height: 12),
                   const Text(
                     'IconStudio',
@@ -173,7 +174,7 @@ class _AuthScreenState extends State<AuthScreen>
                   const Text(
                     'PRO',
                     style: TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: AppColors.gold,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3,
@@ -183,9 +184,9 @@ class _AuthScreenState extends State<AuthScreen>
                   // Card
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: AppColors.panel,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: AppColors.panelBorder),
                     ),
                     child: Column(
                       children: [
@@ -193,15 +194,15 @@ class _AuthScreenState extends State<AuthScreen>
                         Container(
                           decoration: const BoxDecoration(
                             border: Border(
-                              bottom: BorderSide(color: Color(0xFF2A2A2A)),
+                              bottom: BorderSide(color: AppColors.panelBorder),
                             ),
                           ),
                           child: TabBar(
                             controller: _tabs,
-                            indicatorColor: const Color(0xFFD4AF37),
+                            indicatorColor: AppColors.gold,
                             indicatorSize: TabBarIndicatorSize.tab,
-                            labelColor: const Color(0xFFD4AF37),
-                            unselectedLabelColor: const Color(0xFF888888),
+                            labelColor: AppColors.gold,
+                            unselectedLabelColor: AppColors.textSecondary,
                             labelStyle: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -316,7 +317,7 @@ class _SignUpFormState extends State<_SignUpForm> {
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePass ? Icons.visibility_off : Icons.visibility,
-                  color: const Color(0xFF888888),
+                  color: AppColors.textSecondary,
                   size: 20,
                 ),
                 onPressed: () => setState(() => _obscurePass = !_obscurePass),
@@ -334,7 +335,7 @@ class _SignUpFormState extends State<_SignUpForm> {
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                  color: const Color(0xFF888888),
+                  color: AppColors.textSecondary,
                   size: 20,
                 ),
                 onPressed: () =>
@@ -455,21 +456,21 @@ class _AuthField extends StatelessWidget {
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF888888), fontSize: 13),
-        prefixIcon: Icon(icon, color: const Color(0xFF888888), size: 20),
+        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFF111111),
+        fillColor: AppColors.uploadZone,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+          borderSide: const BorderSide(color: AppColors.panelBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+              const BorderSide(color: AppColors.gold, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -503,9 +504,9 @@ class _GoldButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD4AF37),
+          backgroundColor: AppColors.gold,
           foregroundColor: Colors.black,
-          disabledBackgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+          disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
