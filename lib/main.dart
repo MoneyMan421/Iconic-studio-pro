@@ -7,31 +7,21 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
+import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'export_helper.dart';
 
-class AppColors {
-  static const Color background = Color(0xFF0A0A0A);
-  static const Color panel = Color(0xFF1A1A1A);
-  static const Color panelBorder = Color(0xFF2A2A2A);
-  static const Color gold = Color(0xFFD4AF37);
-  static const Color goldLight = Color(0xFFF4E4BC);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF888888);
-  static const Color uploadZone = Color(0xFF111111);
-}
-
 class EditorState {
-  double scale;
-  double rotation;
-  double brightness;
-  double contrast;
-  double saturation;
-  double blur;
-  double refractionIndex;
-  double sparkleIntensity;
-  double facetDepth;
-  Uint8List? userImageBytes;
+  final double scale;
+  final double rotation;
+  final double brightness;
+  final double contrast;
+  final double saturation;
+  final double blur;
+  final double refractionIndex;
+  final double sparkleIntensity;
+  final double facetDepth;
+  final Uint8List? userImageBytes;
 
   EditorState({
     this.scale = 50,
@@ -70,6 +60,7 @@ class EditorState {
     userImageBytes: userImageBytes ?? this.userImageBytes,
   );
 }
+
 void main() => runApp(const IconStudioPro());
 
 class IconStudioPro extends StatelessWidget {
@@ -103,7 +94,7 @@ class StudioPage extends StatefulWidget {
 }
 
 class _StudioPageState extends State<StudioPage> {
-  EditorState state = EditorState();
+  EditorState editorState = EditorState();
   int importsUsed = 0;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
@@ -124,7 +115,7 @@ class _StudioPageState extends State<StudioPage> {
     final bytes = result?.files.single.bytes;
     if (bytes != null) {
       setState(() {
-        state = state.copyWith(userImageBytes: bytes);
+        editorState = editorState.copyWith(userImageBytes: bytes);
         importsUsed++;
       });
     }
@@ -139,7 +130,7 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   Future<void> _exportIcon() async {
-    if (state.userImageBytes == null) {
+    if (editorState.userImageBytes == null) {
       _showMessage('Upload an icon before exporting.');
       return;
     }
@@ -226,7 +217,7 @@ class _StudioPageState extends State<StudioPage> {
                   child: Center(
                     child: RepaintBoundary(
                       key: _previewBoundaryKey,
-                      child: PreviewCanvas(state: state, onPickImage: _pickImage),
+                      child: PreviewCanvas(state: editorState, onPickImage: _pickImage),
                     ),
                   ),
                 ),
@@ -254,7 +245,7 @@ class _StudioPageState extends State<StudioPage> {
                     Center(
                       child: RepaintBoundary(
                         key: _previewBoundaryKey,
-                        child: PreviewCanvas(state: state, onPickImage: _pickImage),
+                        child: PreviewCanvas(state: editorState, onPickImage: _pickImage),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -282,19 +273,19 @@ class _StudioPageState extends State<StudioPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSection('TRANSFORM'),
-        _buildSlider('Scale', state.scale, 0, 100, (v) => setState(() => state = state.copyWith(scale: v)), suffix: '%'),
-        _buildSlider('Rotation', state.rotation, -180, 180, (v) => setState(() => state = state.copyWith(rotation: v)), suffix: '°'),
+        _buildSlider('Scale', editorState.scale, 0, 100, (v) => setState(() => editorState = editorState.copyWith(scale: v)), suffix: '%'),
+        _buildSlider('Rotation', editorState.rotation, -180, 180, (v) => setState(() => editorState = editorState.copyWith(rotation: v)), suffix: '°'),
         const SizedBox(height: 32),
         _buildSection('ADJUSTMENTS'),
-        _buildSlider('Brightness', state.brightness, 0, 200, (v) => setState(() => state = state.copyWith(brightness: v)), suffix: '%'),
-        _buildSlider('Contrast', state.contrast, 0, 200, (v) => setState(() => state = state.copyWith(contrast: v)), suffix: '%'),
-        _buildSlider('Saturation', state.saturation, 0, 200, (v) => setState(() => state = state.copyWith(saturation: v)), suffix: '%'),
-        _buildSlider('Blur', state.blur, 0, 20, (v) => setState(() => state = state.copyWith(blur: v)), suffix: 'px'),
+        _buildSlider('Brightness', editorState.brightness, 0, 200, (v) => setState(() => editorState = editorState.copyWith(brightness: v)), suffix: '%'),
+        _buildSlider('Contrast', editorState.contrast, 0, 200, (v) => setState(() => editorState = editorState.copyWith(contrast: v)), suffix: '%'),
+        _buildSlider('Saturation', editorState.saturation, 0, 200, (v) => setState(() => editorState = editorState.copyWith(saturation: v)), suffix: '%'),
+        _buildSlider('Blur', editorState.blur, 0, 20, (v) => setState(() => editorState = editorState.copyWith(blur: v)), suffix: 'px'),
         const SizedBox(height: 32),
         _buildSection('DIAMOND PHYSICS'),
-        _buildSlider('Refraction', state.refractionIndex, 1.0, 3.0, (v) => setState(() => state = state.copyWith(refractionIndex: v)), decimals: 2),
-        _buildSlider('Sparkle', state.sparkleIntensity, 0, 2.0, (v) => setState(() => state = state.copyWith(sparkleIntensity: v))),
-        _buildSlider('Facet Depth', state.facetDepth, 0, 1.0, (v) => setState(() => state = state.copyWith(facetDepth: v))),
+        _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => setState(() => editorState = editorState.copyWith(refractionIndex: v)), decimals: 2),
+        _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => setState(() => editorState = editorState.copyWith(sparkleIntensity: v))),
+        _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => setState(() => editorState = editorState.copyWith(facetDepth: v))),
       ],
     );
   }
