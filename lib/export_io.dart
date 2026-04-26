@@ -8,7 +8,8 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// On mobile the file is written to the documents / external storage directory.
 /// On desktop a native save-file dialog is shown.
-/// Returns a human-readable status message describing where the file was saved.
+/// Returns the file path where the image was saved, or an empty string if the
+/// user cancelled the save dialog.
 Future<String> saveExportedImage(String suggestedName, Uint8List bytes) async {
   String? savePath;
 
