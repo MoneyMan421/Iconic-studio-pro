@@ -172,6 +172,8 @@ class _StudioPageState extends State<StudioPage> {
         _showMessage('Icon downloaded.');
       } else if (savePath.isNotEmpty) {
         _showMessage('Icon exported to $savePath');
+      } else {
+        _showMessage('Export cancelled.');
       }
     } catch (error, stackTrace) {
       debugPrint('Export failed: $error');
