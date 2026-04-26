@@ -1,13 +1,13 @@
-import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'auth_screen.dart';
+import 'export_helper.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0A0A0A);
@@ -30,7 +30,7 @@ class EditorState {
   double refractionIndex;
   double sparkleIntensity;
   double facetDepth;
-  File? userImage;
+  Uint8List? userImage;
 
   EditorState({
     this.scale = 50,
@@ -55,7 +55,7 @@ class EditorState {
     double? refractionIndex,
     double? sparkleIntensity,
     double? facetDepth,
-    File? userImage,
+    Uint8List? userImage,
   }) => EditorState(
     scale: scale ?? this.scale,
     rotation: rotation ?? this.rotation,
@@ -106,7 +106,6 @@ class _StudioPageState extends State<StudioPage> {
   int importsUsed = 0;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
-  static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
   Future<void> _pickImage() async {
@@ -118,11 +117,12 @@ class _StudioPageState extends State<StudioPage> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.single.bytes != null) {
       setState(() {
-        state = state.copyWith(userImage: File(result.files.single.path!));
+        state = state.copyWith(userImage: result.files.single.bytes);
         importsUsed++;
       });
     }
@@ -162,37 +162,8 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      String? savePath;
-
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Mobile: save to the downloads / documents directory
-        Directory? dir;
-        if (Platform.isAndroid) {
-          try {
-            dir = await getExternalStorageDirectory();
-          } catch (_) {
-            dir = null;
-          }
-          dir ??= await getApplicationDocumentsDirectory();
-        } else {
-          dir = await getApplicationDocumentsDirectory();
-        }
-        savePath = '${dir.path}/iconic_export_${DateTime.now().millisecondsSinceEpoch}.png';
-      } else {
-        // Desktop/web: show native save dialog
-        final selectedPath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save exported icon',
-          fileName: 'iconic_export.png',
-          type: FileType.custom,
-          allowedExtensions: ['png'],
-        );
-        if (selectedPath == null) return;
-        final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
-        savePath = hasPngExtension ? selectedPath : '$selectedPath.png';
-      }
-
-      await File(savePath).writeAsBytes(byteData.buffer.asUint8List());
-      _showMessage('Icon exported to $savePath');
+      final message = await saveExportedIcon(byteData.buffer.asUint8List());
+      if (message.isNotEmpty) _showMessage(message);
     } catch (error, stackTrace) {
       debugPrint('Export failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -544,7 +515,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
                             Paint()..shader = shader,
                           );
                         },
-                        child: Image.file(
+                        child: Image.memory(
                           s.userImage!,
                           fit: BoxFit.cover,
                           width: 300,
