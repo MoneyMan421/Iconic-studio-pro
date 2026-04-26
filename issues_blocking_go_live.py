@@ -1,0 +1,35 @@
+issues = [
+    "1. CI TEST FAILURE – test/widget_test.dart lines 11 and 34 pump `const IconStudioPro()`, which renders the AuthGate/splash screen instead of the studio UI. The async SharedPreferences load never completes within a single pumpWidget call, so the studio page is never shown and `find.text('Export Icon')` and `find.text('IconStudio')` both fail. Fix: replace `const IconStudioPro()` with `MaterialApp(home: const StudioPage())` in those two test groups.",
+
+    "2. CI TEST FAILURE – test/widget_test.dart 'Export button presence' group (line 34) has the same problem as issue 1: it pumps `const IconStudioPro()` and looks for the Export Icon button, which is behind the auth gate and will never be found. Same fix: pump `MaterialApp(home: const StudioPage())` instead.",
+
+    "3. NO FLUTTER WEB PLATFORM CONFIGURED – there is no `web/` directory in the repository. Running `flutter build web` would fail immediately because the web target has never been initialized (`flutter create --platforms=web .` has never been run). The app cannot be deployed as a website without this.",
+
+    "4. `dart:io` USED THROUGHOUT lib/main.dart – `import 'dart:io'` is at the top of main.dart and `File`, `Platform`, `Directory` are used on lines 125, 167-194. These APIs do not exist on Flutter web. Any web build would compile but crash at runtime the moment a user tries to pick an image or export an icon.",
+
+    "5. `EditorState.userImage` IS A `dart:io File` – the field `File? userImage` (line 33, main.dart) and its use with `Image.file()` (line 547) are desktop/mobile-only. On web, `file_picker` returns bytes not a file path, so `result.files.single.path` would be null and the image would never load.",
+
+    "6. EXPORT IS BROKEN ON WEB – `FilePicker.platform.saveFile()` (line 183) is the desktop/web branch of the export function, but `saveFile` is not supported on Flutter web. Attempting to export an icon on a web deployment would either throw an exception or silently do nothing.",
+
+    "7. NO CI WEB BUILD STEP – .github/workflows/ci.yml only builds for Android and iOS. There is no `flutter build web` step, so web-breaking regressions (like the dart:io usages above) would never be caught before deployment.",
+
+    "8. PAYWALLMODAL 'UPGRADE NOW' BUTTON DOES NOTHING – the `onUpgrade` callback passed to `PaywallModal` is `() => Navigator.pop(context)` (line 135, main.dart), which only closes the dialog. No payment is processed, no Pro flag is set, and no features are unlocked. The paywall is completely non-functional.",
+
+    "9. FREE IMPORT LIMIT IS TRIVIALLY BYPASSED – `importsUsed` is stored only in `_StudioPageState` widget state (line 106, main.dart). It resets to 0 every time the app is restarted. The 2-import paywall gate is bypassed by simply closing and reopening the app.",
+
+    "10. LOGIN REQUIRES NO PASSWORD – `AuthState.login()` (auth_screen.dart line 38) only checks that the supplied email matches the stored email. No password is verified. If the stored email is empty (first login ever), *any* email logs straight in. This means any user who knows or guesses a registered email address gains full access.",
+
+    "11. SVG UPLOAD ADVERTISED BUT NOT SUPPORTED – the upload zone UI text reads 'PNG, SVG, or JPG (max. 5 MB)' (line 587, main.dart), but `FilePicker.platform.pickFiles(type: FileType.image)` does not include SVG in its allowed formats. Attempting to pick an SVG will either be blocked by the picker or result in a broken image display because `Image.file()` cannot render SVG.",
+
+    "12. 'CLOUD SYNC' ADVERTISED IN PAYWALL BUT NEVER IMPLEMENTED – the Pro Monthly and Pro Lifetime tiers list 'Cloud sync' as a feature (line 656, main.dart). No sync, backend, or API of any kind exists anywhere in the codebase. Users who upgrade (if payment were real) would not receive this advertised feature.",
+
+    "13. `image_picker` PACKAGE IS DECLARED BUT NEVER USED – pubspec.yaml lists `image_picker: ^1.0.7` as a dependency, but no Dart file in the project ever imports or uses it. The app uses `file_picker` instead. This is dead weight that inflates app size and could cause version-conflict issues with transitive dependencies.",
+
+    "14. `assets/icons/` DIRECTORY IS EMPTY – the directory only contains a `.gitkeep` placeholder. pubspec.yaml declares `assets/icons/` as an asset bundle. While this does not currently cause a crash (Flutter bundles the directory silently when empty), any code that references a specific bundled icon file from this directory would fail at runtime.",
+
+    "15. STATS BAR DISPLAYS HARDCODED FAKE '120 FPS' – the stats bar at the bottom of the studio (line 437, main.dart) shows a hard-coded string `'120'` for FPS. This is not a real measurement. On low-end devices or web, the actual frame rate could be far lower, making this a misleading claim visible to all users.",
+]
+
+for issue in issues:
+    print(issue)
+    print()
