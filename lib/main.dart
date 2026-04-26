@@ -1,13 +1,14 @@
-import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'auth_screen.dart';
+import 'export_helper.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0A0A0A);
@@ -30,7 +31,7 @@ class EditorState {
   double refractionIndex;
   double sparkleIntensity;
   double facetDepth;
-  File? userImage;
+  Uint8List? userImageBytes;
 
   EditorState({
     this.scale = 50,
@@ -42,7 +43,7 @@ class EditorState {
     this.refractionIndex = 2.42,
     this.sparkleIntensity = 0.8,
     this.facetDepth = 0.6,
-    this.userImage,
+    this.userImageBytes,
   });
 
   EditorState copyWith({
@@ -55,7 +56,7 @@ class EditorState {
     double? refractionIndex,
     double? sparkleIntensity,
     double? facetDepth,
-    File? userImage,
+    Uint8List? userImageBytes,
   }) => EditorState(
     scale: scale ?? this.scale,
     rotation: rotation ?? this.rotation,
@@ -66,7 +67,7 @@ class EditorState {
     refractionIndex: refractionIndex ?? this.refractionIndex,
     sparkleIntensity: sparkleIntensity ?? this.sparkleIntensity,
     facetDepth: facetDepth ?? this.facetDepth,
-    userImage: userImage ?? this.userImage,
+    userImageBytes: userImageBytes ?? this.userImageBytes,
   );
 }
 void main() => runApp(const IconStudioPro());
@@ -106,7 +107,6 @@ class _StudioPageState extends State<StudioPage> {
   int importsUsed = 0;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
-  static final RegExp _pngExtensionPattern = RegExp(r'\.png$', caseSensitive: false);
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
   Future<void> _pickImage() async {
@@ -118,11 +118,13 @@ class _StudioPageState extends State<StudioPage> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    final bytes = result?.files.single.bytes;
+    if (bytes != null) {
       setState(() {
-        state = state.copyWith(userImage: File(result.files.single.path!));
+        state = state.copyWith(userImageBytes: bytes);
         importsUsed++;
       });
     }
@@ -137,7 +139,7 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   Future<void> _exportIcon() async {
-    if (state.userImage == null) {
+    if (state.userImageBytes == null) {
       _showMessage('Upload an icon before exporting.');
       return;
     }
@@ -162,37 +164,15 @@ class _StudioPageState extends State<StudioPage> {
         return;
       }
 
-      String? savePath;
+      final bytes = byteData.buffer.asUint8List();
+      final suggestedName = 'iconic_export_${DateTime.now().millisecondsSinceEpoch}.png';
+      final savePath = await saveExportedImage(suggestedName, bytes);
 
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Mobile: save to the downloads / documents directory
-        Directory? dir;
-        if (Platform.isAndroid) {
-          try {
-            dir = await getExternalStorageDirectory();
-          } catch (_) {
-            dir = null;
-          }
-          dir ??= await getApplicationDocumentsDirectory();
-        } else {
-          dir = await getApplicationDocumentsDirectory();
-        }
-        savePath = '${dir.path}/iconic_export_${DateTime.now().millisecondsSinceEpoch}.png';
-      } else {
-        // Desktop/web: show native save dialog
-        final selectedPath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save exported icon',
-          fileName: 'iconic_export.png',
-          type: FileType.custom,
-          allowedExtensions: ['png'],
-        );
-        if (selectedPath == null) return;
-        final hasPngExtension = _pngExtensionPattern.hasMatch(selectedPath);
-        savePath = hasPngExtension ? selectedPath : '$selectedPath.png';
+      if (kIsWeb) {
+        _showMessage('Icon downloaded.');
+      } else if (savePath.isNotEmpty) {
+        _showMessage('Icon exported to $savePath');
       }
-
-      await File(savePath).writeAsBytes(byteData.buffer.asUint8List());
-      _showMessage('Icon exported to $savePath');
     } catch (error, stackTrace) {
       debugPrint('Export failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -532,7 +512,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
               ],
             ),
             child: ClipOval(
-              child: s.userImage != null
+              child: s.userImageBytes != null
                   ? ShaderBuilder(
                       assetKey: 'shaders/diamond_master.frag',
                       (context, shader, child) => AnimatedSampler(
@@ -544,8 +524,8 @@ class _PreviewCanvasState extends State<PreviewCanvas>
                             Paint()..shader = shader,
                           );
                         },
-                        child: Image.file(
-                          s.userImage!,
+                        child: Image.memory(
+                          s.userImageBytes!,
                           fit: BoxFit.cover,
                           width: 300,
                           height: 300,
