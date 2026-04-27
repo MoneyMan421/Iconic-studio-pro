@@ -52,54 +52,53 @@ issues = [
     # ── Still-open issues ────────────────────────────────────────────────────
     {
         "id": 4,
-        "status": OPEN,
+        "status": FIXED,
         "title": "NO FLUTTER WEB PLATFORM CONFIGURED",
         "detail": (
-            "There is no `web/` directory in the repository. Running `flutter build web` "
-            "would fail immediately because the web target has never been initialized "
-            "(`flutter create --platforms=web .` has never been run). "
-            "The app cannot be deployed as a website without this."
+            "FIXED: The `web/` directory now exists in the repository (contains index.html and "
+            "manifest.json). `flutter build web` can be run and CI includes a web build step."
         ),
     },
     {
         "id": 5,
-        "status": OPEN,
+        "status": FIXED,
         "title": "`dart:io` USED THROUGHOUT lib/main.dart – breaks Flutter web",
         "detail": (
-            "`import 'dart:io'` is at the top of main.dart and `File`, `Platform`, `Directory` "
-            "are used (approx. lines 125, 167-194). These APIs do not exist on Flutter web. "
-            "Any web build would compile but crash at runtime the moment a user tries to "
-            "pick an image or export an icon."
+            "FIXED: `import 'dart:io'` has been removed from main.dart entirely. Export logic "
+            "is now in platform-specific files: lib/export_io.dart (native) and "
+            "lib/export_web.dart (web), selected at compile time via lib/export_helper.dart "
+            "using a conditional export (`if (dart.library.html)`)."
         ),
     },
     {
         "id": 6,
-        "status": OPEN,
+        "status": FIXED,
         "title": "`EditorState.userImage` IS A `dart:io File` – mobile/desktop only",
         "detail": (
-            "The field `File? userImage` (main.dart) and its use with `Image.file()` are "
-            "desktop/mobile-only. On web, file_picker returns bytes not a file path, so "
-            "`result.files.single.path` would be null and the image would never load."
+            "FIXED: The field is now `Uint8List? userImageBytes` (main.dart). "
+            "FilePicker is called with `withData: true` so bytes are available on all platforms "
+            "including web. `Image.memory()` is used instead of `Image.file()`, "
+            "which works everywhere."
         ),
     },
     {
         "id": 7,
-        "status": OPEN,
+        "status": FIXED,
         "title": "EXPORT IS BROKEN ON WEB – `FilePicker.saveFile()` unsupported",
         "detail": (
-            "`FilePicker.platform.saveFile()` is the export branch for non-Android/iOS, "
-            "but `saveFile` is not supported on Flutter web. Attempting to export an icon "
-            "on a web deployment would either throw an exception or silently do nothing."
+            "FIXED: Export on web is handled by lib/export_web.dart which uses `dart:html` "
+            "Blob + AnchorElement to trigger a browser download. Native export is in "
+            "lib/export_io.dart. The conditional export in lib/export_helper.dart selects "
+            "the correct implementation at compile time."
         ),
     },
     {
         "id": 8,
-        "status": OPEN,
+        "status": FIXED,
         "title": "NO CI WEB BUILD STEP",
         "detail": (
-            ".github/workflows/ci.yml only builds for Android and iOS. There is no "
-            "`flutter build web` step, so web-breaking regressions (like the dart:io "
-            "usages above) would never be caught before deployment."
+            "FIXED: .github/workflows/ci.yml now includes a web build job "
+            "(`flutter build web --release`) in the matrix alongside android and ios."
         ),
     },
     {
@@ -114,34 +113,36 @@ issues = [
     },
     {
         "id": 10,
-        "status": OPEN,
+        "status": FIXED,
         "title": "FREE IMPORT LIMIT IS TRIVIALLY BYPASSED",
         "detail": (
-            "`importsUsed` is stored only in `_StudioPageState` widget state. It resets to 0 "
-            "every time the app is restarted. The 2-import paywall gate is bypassed by "
-            "simply closing and reopening the app."
+            "FIXED: `importsUsed` is now tracked inside `AuthState` (lib/auth_screen.dart) and "
+            "persisted to SharedPreferences via `incrementImports()`. It survives app restarts. "
+            "`StudioPage` receives the `AuthState` instance from `AuthGate` and reads/updates "
+            "it directly; a local fallback (`_localImportsUsed`) is used only in tests where "
+            "no auth state is injected."
         ),
     },
     {
         "id": 11,
-        "status": OPEN,
+        "status": FIXED,
         "title": "LOGIN REQUIRES NO PASSWORD",
         "detail": (
-            "`AuthState.login()` (auth_screen.dart) only checks that the supplied email matches "
-            "the stored email. No password is verified. If the stored email is empty "
-            "(first login ever), *any* email logs straight in. Any user who knows or guesses "
-            "a registered email address gains full access."
+            "FIXED: `AuthState.signUp()` now accepts a `password` parameter and persists it to "
+            "SharedPreferences (key: `userPassword`). `AuthState.login()` now requires both "
+            "`email` and `password` and throws if the password does not match the stored value. "
+            "The login form (`_LoginForm` in lib/auth_screen.dart) has a password field with "
+            "show/hide toggle, matching the sign-up form."
         ),
     },
     {
         "id": 12,
-        "status": OPEN,
+        "status": FIXED,
         "title": "SVG UPLOAD ADVERTISED BUT NOT SUPPORTED",
         "detail": (
-            "The upload zone UI text reads 'PNG, SVG, or JPG (max. 5 MB)', but "
-            "`FilePicker.platform.pickFiles(type: FileType.image)` does not include SVG "
-            "in its allowed formats. Picking an SVG will either be blocked by the picker "
-            "or result in a broken image because `Image.file()` cannot render SVG."
+            "FIXED: The upload zone hint text in lib/main.dart (`PreviewCanvas`) has been "
+            "corrected from 'PNG, SVG, or JPG (max. 5 MB)' to 'PNG or JPG (max. 5 MB)', "
+            "matching what `FilePicker` actually accepts."
         ),
     },
     {
@@ -156,13 +157,11 @@ issues = [
     },
     {
         "id": 14,
-        "status": OPEN,
+        "status": FIXED,
         "title": "`image_picker` PACKAGE DECLARED BUT NEVER USED",
         "detail": (
-            "pubspec.yaml lists `image_picker: ^1.0.7` as a dependency, but no Dart file "
-            "in the project ever imports or uses it. The app uses `file_picker` instead. "
-            "This is dead weight that inflates app size and could cause version-conflict "
-            "issues with transitive dependencies."
+            "FIXED: `image_picker: ^1.0.7` has been removed from pubspec.yaml. "
+            "The app uses `file_picker` for all image selection; `image_picker` was dead weight."
         ),
     },
     {
@@ -177,12 +176,12 @@ issues = [
     },
     {
         "id": 16,
-        "status": OPEN,
+        "status": FIXED,
         "title": "STATS BAR DISPLAYS HARDCODED FAKE '120 FPS'",
         "detail": (
-            "The stats bar at the bottom of the studio shows a hard-coded string `'120'` for FPS. "
-            "This is not a real measurement. On low-end devices or web, the actual frame rate "
-            "could be far lower, making this a misleading claim visible to all users."
+            "FIXED: `_StudioPageState` now has a `Ticker` (via `SingleTickerProviderStateMixin`) "
+            "that counts frames per second. `_buildStatsBar()` in lib/main.dart displays the "
+            "live measured value (`_fps`) instead of the hard-coded string `'120'`."
         ),
     },
 ]

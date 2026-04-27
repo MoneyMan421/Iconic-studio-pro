@@ -81,24 +81,69 @@ class IconStudioPro extends StatelessWidget {
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         ),
       ),
-      home: const AuthGate(child: StudioPage()),
+      home: AuthGate(builder: (auth) => StudioPage(auth: auth)),
     );
   }
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  final AuthState? auth;
+  const StudioPage({super.key, this.auth});
 
   @override
   State<StudioPage> createState() => _StudioPageState();
 }
 
-class _StudioPageState extends State<StudioPage> {
+class _StudioPageState extends State<StudioPage>
+    with SingleTickerProviderStateMixin {
   EditorState editorState = EditorState();
-  int importsUsed = 0;
+  int _localImportsUsed = 0;
+  int get importsUsed => widget.auth?.importsUsed ?? _localImportsUsed;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
+
+  // FPS tracking
+  late final Ticker _fpsTicker;
+  int _fps = 0;
+  int _frameCount = 0;
+  Duration _lastFpsUpdate = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.auth?.addListener(_onAuthChanged);
+    _fpsTicker = createTicker(_onFpsTick)..start();
+  }
+
+  @override
+  void didUpdateWidget(StudioPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.auth != widget.auth) {
+      oldWidget.auth?.removeListener(_onAuthChanged);
+      widget.auth?.addListener(_onAuthChanged);
+    }
+  }
+
+  void _onFpsTick(Duration elapsed) {
+    _frameCount++;
+    if (elapsed - _lastFpsUpdate >= const Duration(seconds: 1)) {
+      setState(() {
+        _fps = _frameCount;
+        _frameCount = 0;
+        _lastFpsUpdate = elapsed;
+      });
+    }
+  }
+
+  void _onAuthChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.auth?.removeListener(_onAuthChanged);
+    _fpsTicker.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -114,9 +159,13 @@ class _StudioPageState extends State<StudioPage> {
 
     final bytes = result?.files.single.bytes;
     if (bytes != null) {
+      if (widget.auth != null) {
+        await widget.auth!.incrementImports();
+      } else {
+        setState(() => _localImportsUsed++);
+      }
       setState(() {
         editorState = editorState.copyWith(userImageBytes: bytes);
-        importsUsed++;
       });
     }
   }
@@ -400,14 +449,14 @@ class _StudioPageState extends State<StudioPage> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.panelBorder)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _StatItem(label: 'Quality', value: 'Ultra HD'),
-          SizedBox(width: 48),
-          _StatItem(label: 'Format', value: 'PNG'),
-          SizedBox(width: 48),
-          _StatItem(label: 'FPS', value: '120'),
+          const _StatItem(label: 'Quality', value: 'Ultra HD'),
+          const SizedBox(width: 48),
+          const _StatItem(label: 'Format', value: 'PNG'),
+          const SizedBox(width: 48),
+          _StatItem(label: 'FPS', value: '$_fps'),
         ],
       ),
     );
@@ -557,7 +606,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
                       style: TextStyle(
                           color: AppColors.textPrimary, fontSize: 14)),
                   const SizedBox(height: 4),
-                  const Text('PNG, SVG, or JPG (max. 5 MB)',
+                  const Text('PNG or JPG (max. 5 MB)',
                       style: TextStyle(
                           color: AppColors.textSecondary, fontSize: 11)),
                 ],

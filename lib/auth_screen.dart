@@ -11,43 +11,67 @@ String? _validateEmail(String? v) {
   return null;
 }
 
-/// Simple in-app auth state. Persists login across restarts via SharedPreferences.
+/// Simple in-app auth state. Persists login and import count across restarts via SharedPreferences.
 class AuthState extends ChangeNotifier {
   bool _isLoggedIn = false;
   String _displayName = '';
+  int _importsUsed = 0;
 
   bool get isLoggedIn => _isLoggedIn;
   String get displayName => _displayName;
+  int get importsUsed => _importsUsed;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     _displayName = prefs.getString('displayName') ?? '';
+    _importsUsed = prefs.getInt('importsUsed') ?? 0;
     notifyListeners();
   }
 
-  Future<void> signUp({required String name, required String email}) async {
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('displayName', name);
     await prefs.setString('userEmail', email);
+    // NOTE: password is stored as plain text; this is acceptable for a local-only
+    // demo app, but should be replaced with a proper hash (e.g. PBKDF2) before
+    // production deployment.
+    await prefs.setString('userPassword', password);
     _isLoggedIn = true;
     _displayName = name;
     notifyListeners();
   }
 
-  Future<void> login({required String email}) async {
+  Future<void> login({required String email, required String password}) async {
     final prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('userEmail') ?? '';
-    if (storedEmail.isEmpty || storedEmail == email) {
-      final storedName = prefs.getString('displayName') ?? email.split('@').first;
-      await prefs.setBool('isLoggedIn', true);
-      _isLoggedIn = true;
-      _displayName = storedName;
-      notifyListeners();
-    } else {
+    final storedPassword = prefs.getString('userPassword') ?? '';
+    if (storedEmail.isEmpty) {
+      throw Exception('No account found. Please sign up first.');
+    }
+    if (storedEmail != email) {
       throw Exception('No account found for that email. Please sign up.');
     }
+    if (storedPassword != password) {
+      throw Exception('Incorrect password.');
+    }
+    final storedName = prefs.getString('displayName') ?? email.split('@').first;
+    await prefs.setBool('isLoggedIn', true);
+    _isLoggedIn = true;
+    _displayName = storedName;
+    notifyListeners();
+  }
+
+  Future<void> incrementImports() async {
+    final prefs = await SharedPreferences.getInstance();
+    _importsUsed++;
+    await prefs.setInt('importsUsed', _importsUsed);
+    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -60,8 +84,8 @@ class AuthState extends ChangeNotifier {
 
 /// Root widget that resolves auth state and routes to the correct screen.
 class AuthGate extends StatefulWidget {
-  final Widget child;
-  const AuthGate({super.key, required this.child});
+  final Widget Function(AuthState auth) builder;
+  const AuthGate({super.key, required this.builder});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -92,7 +116,7 @@ class _AuthGateState extends State<AuthGate> {
       return const _SplashScreen();
     }
     if (_auth.isLoggedIn) {
-      return widget.child;
+      return widget.builder(_auth);
     }
     return AuthScreen(auth: _auth);
   }
@@ -272,6 +296,7 @@ class _SignUpFormState extends State<_SignUpForm> {
       await widget.auth.signUp(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
       );
     } catch (e) {
       if (mounted) {
@@ -371,11 +396,14 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscurePass = true;
   bool _loading = false;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -383,7 +411,10 @@ class _LoginFormState extends State<_LoginForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await widget.auth.login(email: _emailCtrl.text.trim().toLowerCase());
+      await widget.auth.login(
+        email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -411,6 +442,23 @@ class _LoginFormState extends State<_LoginForm> {
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: _validateEmail,
+            ),
+            const SizedBox(height: 14),
+            _AuthField(
+              controller: _passCtrl,
+              label: 'Password',
+              icon: Icons.lock_outline,
+              obscureText: _obscurePass,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePass ? Icons.visibility_off : Icons.visibility,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+              ),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Password is required' : null,
             ),
             const Spacer(),
             _GoldButton(
