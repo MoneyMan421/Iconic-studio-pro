@@ -9,7 +9,7 @@ import 'package:web/web.dart' as web;
 /// the web platform).
 Future<String> saveExportedImage(String suggestedName, Uint8List bytes) async {
   final blob = web.Blob(
-    [bytes.buffer.toJS].toJS,
+    [bytes.toJS].toJS,
     web.BlobPropertyBag(type: 'image/png'),
   );
   final url = web.URL.createObjectURL(blob);
