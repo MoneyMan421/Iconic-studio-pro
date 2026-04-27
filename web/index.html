@@ -22,17 +22,17 @@
   <meta name="description" content="IconStudio Pro — premium icon editor with real-time diamond refraction shaders. Upload, tune, and export stunning icons in one click.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  <!-- Open Graph -->
+  <!-- Open Graph — replace the og:image URL with your deployment domain before launch -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="IconStudio Pro — Diamond-Effect Icon Editor">
   <meta property="og:description" content="Create stunning diamond-refraction icons in seconds. Real-time GLSL shaders, live preview, one-click PNG export.">
-  <meta property="og:image" content="icons/Icon-512.png">
+  <meta property="og:image" content="https://REPLACE_WITH_YOUR_DOMAIN/icons/Icon-512.png">
 
-  <!-- Twitter Card -->
+  <!-- Twitter Card — replace the twitter:image URL with your deployment domain before launch -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="IconStudio Pro — Diamond-Effect Icon Editor">
   <meta name="twitter:description" content="Create stunning diamond-refraction icons in seconds. Real-time GLSL shaders, live preview, one-click PNG export.">
-  <meta name="twitter:image" content="icons/Icon-512.png">
+  <meta name="twitter:image" content="https://REPLACE_WITH_YOUR_DOMAIN/icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -155,7 +155,7 @@
             appRunner.runApp();
 
             // Fade out the loading splash once the app is running
-            var splash = document.getElementById('loading-splash');
+            const splash = document.getElementById('loading-splash');
             if (splash) {
               splash.classList.add('hidden');
               splash.addEventListener('transitionend', function() {
