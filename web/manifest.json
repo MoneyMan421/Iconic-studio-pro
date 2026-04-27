@@ -6,7 +6,7 @@
     "background_color": "#0A0A0A",
     "theme_color": "#D4AF37",
     "description": "Premium icon editor with diamond refraction shaders.",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
