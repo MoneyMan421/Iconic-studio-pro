@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,29 +18,125 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Premium icon editor with diamond refraction shaders">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="IconStudio Pro — premium icon editor with real-time diamond refraction shaders. Upload, tune, and export stunning icons in one click.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="IconStudio Pro — Diamond-Effect Icon Editor">
+  <meta property="og:description" content="Create stunning diamond-refraction icons in seconds. Real-time GLSL shaders, live preview, one-click PNG export.">
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IconStudio Pro — Diamond-Effect Icon Editor">
+  <meta name="twitter:description" content="Create stunning diamond-refraction icons in seconds. Real-time GLSL shaders, live preview, one-click PNG export.">
+  <meta name="twitter:image" content="icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="IconStudio Pro">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="icons/Icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png"/>
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
 
-  <title>IconStudio Pro</title>
+  <title>IconStudio Pro — Diamond-Effect Icon Editor</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       background-color: #0A0A0A;
+    }
+
+    /* Loading splash shown while Flutter engine boots */
+    #loading-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #0A0A0A;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+
+    #loading-splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .splash-icon {
+      font-size: 56px;
+      margin-bottom: 20px;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .splash-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 0.5px;
+    }
+
+    .splash-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #D4AF37;
+      letter-spacing: 3px;
+      margin-top: 4px;
+    }
+
+    .splash-bar-track {
+      width: 160px;
+      height: 2px;
+      background-color: #2A2A2A;
+      border-radius: 2px;
+      margin-top: 32px;
+      overflow: hidden;
+    }
+
+    .splash-bar-fill {
+      height: 100%;
+      background-color: #D4AF37;
+      border-radius: 2px;
+      animation: loading-bar 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%       { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    @keyframes loading-bar {
+      0%   { width: 0%;    margin-left: 0; }
+      50%  { width: 80%;   margin-left: 0; }
+      100% { width: 0%;    margin-left: 100%; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Loading splash — hidden once Flutter app is ready -->
+  <div id="loading-splash" aria-live="polite" aria-label="Loading IconStudio Pro">
+    <div class="splash-icon">💎</div>
+    <div class="splash-title">IconStudio</div>
+    <div class="splash-subtitle">PRO</div>
+    <div class="splash-bar-track">
+      <div class="splash-bar-fill"></div>
+    </div>
+  </div>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
@@ -57,6 +153,15 @@
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine().then(function(appRunner) {
             appRunner.runApp();
+
+            // Fade out the loading splash once the app is running
+            var splash = document.getElementById('loading-splash');
+            if (splash) {
+              splash.classList.add('hidden');
+              splash.addEventListener('transitionend', function() {
+                splash.remove();
+              }, { once: true });
+            }
           });
         }
       });

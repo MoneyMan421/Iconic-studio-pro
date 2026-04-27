@@ -5,8 +5,10 @@
     "display": "standalone",
     "background_color": "#0A0A0A",
     "theme_color": "#D4AF37",
-    "description": "Premium icon editor with diamond refraction shaders.",
-    "orientation": "portrait-primary",
+    "description": "Premium icon editor with real-time diamond refraction shaders. Upload, tune, and export stunning icons in one click.",
+    "orientation": "any",
+    "lang": "en",
+    "categories": ["productivity", "photo", "design"],
     "prefer_related_applications": false,
     "icons": [
         {
