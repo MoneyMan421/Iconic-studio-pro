@@ -1,5 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'app_colors.dart';
 
 /// Shared email validation regex.
@@ -11,90 +11,48 @@ String? _validateEmail(String? v) {
   return null;
 }
 
-/// Simple in-app auth state. Persists login across restarts via SharedPreferences.
-class AuthState extends ChangeNotifier {
-  bool _isLoggedIn = false;
-  String _displayName = '';
-
-  bool get isLoggedIn => _isLoggedIn;
-  String get displayName => _displayName;
-
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    _displayName = prefs.getString('displayName') ?? '';
-    notifyListeners();
-  }
-
-  Future<void> signUp({required String name, required String email}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('displayName', name);
-    await prefs.setString('userEmail', email);
-    _isLoggedIn = true;
-    _displayName = name;
-    notifyListeners();
-  }
-
-  Future<void> login({required String email}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedEmail = prefs.getString('userEmail') ?? '';
-    if (storedEmail.isEmpty || storedEmail == email) {
-      final storedName = prefs.getString('displayName') ?? email.split('@').first;
-      await prefs.setBool('isLoggedIn', true);
-      _isLoggedIn = true;
-      _displayName = storedName;
-      notifyListeners();
-    } else {
-      throw Exception('No account found for that email. Please sign up.');
-    }
-  }
-
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    _isLoggedIn = false;
-    notifyListeners();
+/// Translates [FirebaseAuthException] codes to user-friendly messages.
+String _authErrorMessage(FirebaseAuthException e) {
+  switch (e.code) {
+    case 'email-already-in-use':
+      return 'An account already exists for that email.';
+    case 'invalid-email':
+      return 'That email address is not valid.';
+    case 'weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'user-not-found':
+      return 'No account found for that email. Please sign up.';
+    case 'wrong-password':
+    case 'invalid-credential':
+      return 'Incorrect email or password.';
+    case 'user-disabled':
+      return 'This account has been disabled.';
+    case 'too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    default:
+      return e.message ?? 'An unexpected error occurred.';
   }
 }
 
-/// Root widget that resolves auth state and routes to the correct screen.
-class AuthGate extends StatefulWidget {
+/// Root widget that listens to Firebase auth state and routes accordingly.
+class AuthGate extends StatelessWidget {
   final Widget child;
   const AuthGate({super.key, required this.child});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  final AuthState _auth = AuthState();
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _auth.addListener(_onAuthChanged);
-    _auth.load().whenComplete(() => setState(() => _loading = false));
-  }
-
-  @override
-  void dispose() {
-    _auth.removeListener(_onAuthChanged);
-    super.dispose();
-  }
-
-  void _onAuthChanged() => setState(() {});
-
-  @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const _SplashScreen();
-    }
-    if (_auth.isLoggedIn) {
-      return widget.child;
-    }
-    return AuthScreen(auth: _auth);
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _SplashScreen();
+        }
+        if (snapshot.hasData) {
+          return child;
+        }
+        return const AuthScreen();
+      },
+    );
   }
 }
 
@@ -124,8 +82,7 @@ class _SplashScreen extends StatelessWidget {
 // ─── Auth Screen ─────────────────────────────────────────────────────────────
 
 class AuthScreen extends StatefulWidget {
-  final AuthState auth;
-  const AuthScreen({super.key, required this.auth});
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -214,12 +171,12 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: 340,
+                          height: 380,
                           child: TabBarView(
                             controller: _tabs,
-                            children: [
-                              _SignUpForm(auth: widget.auth),
-                              _LoginForm(auth: widget.auth),
+                            children: const [
+                              _SignUpForm(),
+                              _LoginForm(),
                             ],
                           ),
                         ),
@@ -239,8 +196,7 @@ class _AuthScreenState extends State<AuthScreen>
 // ─── Sign-Up Form ─────────────────────────────────────────────────────────────
 
 class _SignUpForm extends StatefulWidget {
-  final AuthState auth;
-  const _SignUpForm({required this.auth});
+  const _SignUpForm();
 
   @override
   State<_SignUpForm> createState() => _SignUpFormState();
@@ -269,10 +225,18 @@ class _SignUpFormState extends State<_SignUpForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await widget.auth.signUp(
-        name: _nameCtrl.text.trim(),
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
       );
+      await credential.user?.updateDisplayName(_nameCtrl.text.trim());
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_authErrorMessage(e))),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -361,8 +325,7 @@ class _SignUpFormState extends State<_SignUpForm> {
 // ─── Login Form ───────────────────────────────────────────────────────────────
 
 class _LoginForm extends StatefulWidget {
-  final AuthState auth;
-  const _LoginForm({required this.auth});
+  const _LoginForm();
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -371,11 +334,14 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscurePass = true;
   bool _loading = false;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -383,7 +349,16 @@ class _LoginFormState extends State<_LoginForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await widget.auth.login(email: _emailCtrl.text.trim().toLowerCase());
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_authErrorMessage(e))),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -411,6 +386,23 @@ class _LoginFormState extends State<_LoginForm> {
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: _validateEmail,
+            ),
+            const SizedBox(height: 14),
+            _AuthField(
+              controller: _passCtrl,
+              label: 'Password',
+              icon: Icons.lock_outline,
+              obscureText: _obscurePass,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePass ? Icons.visibility_off : Icons.visibility,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+              ),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Password is required' : null,
             ),
             const Spacer(),
             _GoldButton(

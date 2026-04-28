@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -10,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'export_helper.dart';
+import 'firebase_options.dart';
 
 class EditorState {
   final double scale;
@@ -61,7 +63,13 @@ class EditorState {
   );
 }
 
-void main() => runApp(const IconStudioPro());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const IconStudioPro());
+}
 
 class IconStudioPro extends StatelessWidget {
   const IconStudioPro({super.key});
