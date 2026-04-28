@@ -81,6 +81,8 @@ class _SplashScreen extends StatelessWidget {
 
 // ─── Auth Screen ─────────────────────────────────────────────────────────────
 
+const double _kTabViewHeight = 380;
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -171,7 +173,7 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: 380,
+                          height: _kTabViewHeight,
                           child: TabBarView(
                             controller: _tabs,
                             children: const [
