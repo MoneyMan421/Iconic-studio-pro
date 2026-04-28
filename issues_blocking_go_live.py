@@ -9,51 +9,52 @@ STATUS KEY
 
 Run this file with:  python issues_blocking_go_live.py
 """
+import sys
 
 # ── Repository structure ─────────────────────────────────────────────────────
 REPO_STRUCTURE = """
-iconic_studio_pro/                     ← repo root
-│
-├── lib/                               ← ALL Dart source code
-│   ├── main.dart                      ← App entry point, all core UI & editor logic
-│   │     • IconStudioPro (MaterialApp root)
-│   │     • StudioPage / _StudioPageState (editor screen, import counter)
-│   │     • EditorState (immutable value object, copyWith pattern)
-│   │     • PreviewCanvas (animated GLSL diamond shader preview)
-│   │     • PaywallModal (upgrade dialog – currently non-functional)
-│   │     • _StatItem, _buildStatsBar (hardcoded FPS display)
-│   ├── auth_screen.dart               ← Auth state & sign-up / sign-in UI
-│   │     • AuthState (ChangeNotifier, SharedPreferences persistence)
-│   │     • AuthGate (routes to AuthScreen or child based on login state)
-│   │     • AuthScreen → _SignUpForm, _LoginForm
-│   │     • _AuthField, _GoldButton (shared form widgets)
-│   ├── app_colors.dart                ← AppColors constants (never use raw Color literals)
-│   ├── export_helper.dart             ← Conditional export: routes to io or web impl
-│   ├── export_io.dart                 ← Native export (Android/iOS: documents dir; desktop: save dialog)
-│   └── export_web.dart                ← Web export (dart:html Blob download)
-│
-├── shaders/
-│   └── diamond_master.frag            ← GLSL fragment shader (diamond refraction effect)
-│
-├── assets/
-│   └── icons/                         ← Bundled icon assets (currently empty – .gitkeep only)
-│
-├── test/
-│   └── widget_test.dart               ← Widget & unit tests (pumps StudioPage directly)
-│
-├── android/                           ← Android platform files
-├── ios/                               ← iOS platform files
-├── web/                               ← Flutter web platform files (index.html, manifest.json)
-│
-├── .github/
-│   └── workflows/
-│       └── ci.yml                     ← CI: analyze → test → build (Android + iOS + web)
-│
-├── pubspec.yaml                       ← Dependencies & asset declarations
-├── issues_blocking_go_live.py         ← This file – issue tracker
-└── deliverables/
-    ├── ISSUES_FIXED_REPORT.txt
-    └── ISSUES_TO_FIX.md
+iconic_studio_pro/                     <- repo root
+|
++-- lib/                               <- ALL Dart source code
+|   +-- main.dart                      <- App entry point, all core UI & editor logic
+|   |     - IconStudioPro (MaterialApp root)
+|   |     - StudioPage / _StudioPageState (editor screen, import counter)
+|   |     - EditorState (immutable value object, copyWith pattern)
+|   |     - PreviewCanvas (animated GLSL diamond shader preview)
+|   |     - PaywallModal (upgrade dialog - currently non-functional)
+|   |     - _StatItem, _buildStatsBar (hardcoded FPS display)
+|   +-- auth_screen.dart               <- Auth state & sign-up / sign-in UI
+|   |     - AuthState (ChangeNotifier, SharedPreferences persistence)
+|   |     - AuthGate (routes to AuthScreen or child based on login state)
+|   |     - AuthScreen -> _SignUpForm, _LoginForm
+|   |     - _AuthField, _GoldButton (shared form widgets)
+|   +-- app_colors.dart                <- AppColors constants (never use raw Color literals)
+|   +-- export_helper.dart             <- Conditional export: routes to io or web impl
+|   +-- export_io.dart                 <- Native export (Android/iOS: documents dir; desktop: save dialog)
+|   +-- export_web.dart                <- Web export (dart:html Blob download)
+|
++-- shaders/
+|   +-- diamond_master.frag            <- GLSL fragment shader (diamond refraction effect)
+|
++-- assets/
+|   +-- icons/                         <- Bundled icon assets (currently empty - .gitkeep only)
+|
++-- test/
+|   +-- widget_test.dart               <- Widget & unit tests (pumps StudioPage directly)
+|
++-- android/                           <- Android platform files
++-- ios/                               <- iOS platform files
++-- web/                               <- Flutter web platform files (index.html, manifest.json)
+|
++-- .github/
+|   +-- workflows/
+|       +-- ci.yml                     <- CI: analyze -> test -> build (Android + iOS + web)
+|
++-- pubspec.yaml                       <- Dependencies & asset declarations
++-- issues_blocking_go_live.py         <- This file - issue tracker
++-- deliverables/
+    +-- ISSUES_FIXED_REPORT.txt
+    +-- ISSUES_TO_FIX.md
 """
 
 # ── Issue list ───────────────────────────────────────────────────────────────
@@ -291,6 +292,8 @@ issues = [
 
 # ── Runner ───────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     open_issues  = [i for i in issues if i["status"] == OPEN]
     fixed_issues = [i for i in issues if i["status"] == FIXED]
 
