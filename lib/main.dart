@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'editor_storage.dart';
@@ -175,7 +176,17 @@ class _StudioPageState extends State<StudioPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
+      builder: (_) => PaywallModal(
+        onUpgrade: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
+              backgroundColor: Color(0xFFD4AF37),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -607,7 +618,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
                       style: TextStyle(
                           color: AppColors.textPrimary, fontSize: 14)),
                   const SizedBox(height: 4),
-                  const Text('PNG, SVG, or JPG (max. 5 MB)',
+                  const Text('PNG or JPG (max. 5 MB)',
                       style: TextStyle(
                           color: AppColors.textSecondary, fontSize: 11)),
                 ],
@@ -739,3 +750,4 @@ class PaywallModal extends StatelessWidget {
     );
   }
 }
+
