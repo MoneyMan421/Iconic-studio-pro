@@ -9,6 +9,7 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
+import 'editor_storage.dart';
 import 'export_helper.dart';
 
 class EditorState {
@@ -100,6 +101,54 @@ class _StudioPageState extends State<StudioPage> {
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  /// Restores previously saved editor settings from persistent storage.
+  Future<void> _loadState() async {
+    final saved = await EditorStorage.load();
+    if (!mounted) return;
+    setState(() {
+      editorState = EditorState(
+        scale: saved.scale,
+        rotation: saved.rotation,
+        brightness: saved.brightness,
+        contrast: saved.contrast,
+        saturation: saved.saturation,
+        blur: saved.blur,
+        refractionIndex: saved.refractionIndex,
+        sparkleIntensity: saved.sparkleIntensity,
+        facetDepth: saved.facetDepth,
+      );
+      importsUsed = saved.importsUsed;
+    });
+  }
+
+  /// Persists the current editor settings and import count. Fire-and-forget.
+  void _saveState() {
+    EditorStorage.save(
+      scale: editorState.scale,
+      rotation: editorState.rotation,
+      brightness: editorState.brightness,
+      contrast: editorState.contrast,
+      saturation: editorState.saturation,
+      blur: editorState.blur,
+      refractionIndex: editorState.refractionIndex,
+      sparkleIntensity: editorState.sparkleIntensity,
+      facetDepth: editorState.facetDepth,
+      importsUsed: importsUsed,
+    );
+  }
+
+  /// Updates [editorState] and immediately persists the new value.
+  void _setEditorState(EditorState s) {
+    setState(() => editorState = s);
+    _saveState();
+  }
+
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
       _showPaywall();
@@ -118,6 +167,7 @@ class _StudioPageState extends State<StudioPage> {
         editorState = editorState.copyWith(userImageBytes: bytes);
         importsUsed++;
       });
+      _saveState();
     }
   }
 
@@ -273,19 +323,19 @@ class _StudioPageState extends State<StudioPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSection('TRANSFORM'),
-        _buildSlider('Scale', editorState.scale, 0, 100, (v) => setState(() => editorState = editorState.copyWith(scale: v)), suffix: '%'),
-        _buildSlider('Rotation', editorState.rotation, -180, 180, (v) => setState(() => editorState = editorState.copyWith(rotation: v)), suffix: '°'),
+        _buildSlider('Scale', editorState.scale, 0, 100, (v) => _setEditorState(editorState.copyWith(scale: v)), suffix: '%'),
+        _buildSlider('Rotation', editorState.rotation, -180, 180, (v) => _setEditorState(editorState.copyWith(rotation: v)), suffix: '°'),
         const SizedBox(height: 32),
         _buildSection('ADJUSTMENTS'),
-        _buildSlider('Brightness', editorState.brightness, 0, 200, (v) => setState(() => editorState = editorState.copyWith(brightness: v)), suffix: '%'),
-        _buildSlider('Contrast', editorState.contrast, 0, 200, (v) => setState(() => editorState = editorState.copyWith(contrast: v)), suffix: '%'),
-        _buildSlider('Saturation', editorState.saturation, 0, 200, (v) => setState(() => editorState = editorState.copyWith(saturation: v)), suffix: '%'),
-        _buildSlider('Blur', editorState.blur, 0, 20, (v) => setState(() => editorState = editorState.copyWith(blur: v)), suffix: 'px'),
+        _buildSlider('Brightness', editorState.brightness, 0, 200, (v) => _setEditorState(editorState.copyWith(brightness: v)), suffix: '%'),
+        _buildSlider('Contrast', editorState.contrast, 0, 200, (v) => _setEditorState(editorState.copyWith(contrast: v)), suffix: '%'),
+        _buildSlider('Saturation', editorState.saturation, 0, 200, (v) => _setEditorState(editorState.copyWith(saturation: v)), suffix: '%'),
+        _buildSlider('Blur', editorState.blur, 0, 20, (v) => _setEditorState(editorState.copyWith(blur: v)), suffix: 'px'),
         const SizedBox(height: 32),
         _buildSection('DIAMOND PHYSICS'),
-        _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => setState(() => editorState = editorState.copyWith(refractionIndex: v)), decimals: 2),
-        _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => setState(() => editorState = editorState.copyWith(sparkleIntensity: v))),
-        _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => setState(() => editorState = editorState.copyWith(facetDepth: v))),
+        _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => _setEditorState(editorState.copyWith(refractionIndex: v)), decimals: 2),
+        _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => _setEditorState(editorState.copyWith(sparkleIntensity: v))),
+        _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
       ],
     );
   }
