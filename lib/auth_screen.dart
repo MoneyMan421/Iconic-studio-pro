@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 import 'app_colors.dart';
 
 /// Shared email validation regex.
@@ -9,6 +11,11 @@ String? _validateEmail(String? v) {
   if (v == null || v.trim().isEmpty) return 'Email is required';
   if (!_emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
   return null;
+}
+
+String _hashPassword(String password) {
+  final bytes = utf8.encode(password);
+  return sha256.convert(bytes).toString();
 }
 
 /// Simple in-app auth state. Persists login across restarts via SharedPreferences.
@@ -26,28 +33,46 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signUp({required String name, required String email}) async {
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
+    final existingEmail = prefs.getString('userEmail') ?? '';
+    if (existingEmail.isNotEmpty && existingEmail != email) {
+      throw Exception('An account already exists. Please log in instead.');
+    }
+    final hashed = _hashPassword(password);
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('displayName', name);
-    await prefs.setString('userEmail', email);
+    await prefs.setString('userEmail', email.toLowerCase().trim());
+    await prefs.setString('userPasswordHash', hashed);
     _isLoggedIn = true;
     _displayName = name;
     notifyListeners();
   }
 
-  Future<void> login({required String email}) async {
+  Future<void> login({required String email, required String password}) async {
     final prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('userEmail') ?? '';
-    if (storedEmail.isEmpty || storedEmail == email) {
-      final storedName = prefs.getString('displayName') ?? email.split('@').first;
-      await prefs.setBool('isLoggedIn', true);
-      _isLoggedIn = true;
-      _displayName = storedName;
-      notifyListeners();
-    } else {
-      throw Exception('No account found for that email. Please sign up.');
+    final storedHash = prefs.getString('userPasswordHash') ?? '';
+
+    if (storedEmail.isEmpty) {
+      throw Exception('No account found. Please sign up first.');
     }
+    if (storedEmail != email.toLowerCase().trim()) {
+      throw Exception('No account found for that email.');
+    }
+    if (storedHash.isNotEmpty && storedHash != _hashPassword(password)) {
+      throw Exception('Incorrect password.');
+    }
+
+    final storedName = prefs.getString('displayName') ?? email.split('@').first;
+    await prefs.setBool('isLoggedIn', true);
+    _isLoggedIn = true;
+    _displayName = storedName;
+    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -160,7 +185,6 @@ class _AuthScreenState extends State<AuthScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo
                   const Icon(Icons.diamond, color: AppColors.gold, size: 64),
                   const SizedBox(height: 12),
                   const Text(
@@ -181,7 +205,6 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Card
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.panel,
@@ -190,7 +213,6 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                     child: Column(
                       children: [
-                        // Tab bar
                         Container(
                           decoration: const BoxDecoration(
                             border: Border(
@@ -214,7 +236,7 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: 340,
+                          height: 380,
                           child: TabBarView(
                             controller: _tabs,
                             children: [
@@ -272,6 +294,7 @@ class _SignUpFormState extends State<_SignUpForm> {
       await widget.auth.signUp(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
       );
     } catch (e) {
       if (mounted) {
@@ -322,9 +345,11 @@ class _SignUpFormState extends State<_SignUpForm> {
                 ),
                 onPressed: () => setState(() => _obscurePass = !_obscurePass),
               ),
-              validator: (v) => (v == null || v.length < 6)
-                  ? 'Password must be at least 6 characters'
-                  : null,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password is required';
+                if (v.length < 6) return 'Minimum 6 characters';
+                return null;
+              },
             ),
             const SizedBox(height: 14),
             _AuthField(
@@ -341,11 +366,12 @@ class _SignUpFormState extends State<_SignUpForm> {
                 onPressed: () =>
                     setState(() => _obscureConfirm = !_obscureConfirm),
               ),
-              validator: (v) => v != _passCtrl.text
-                  ? 'Passwords do not match'
-                  : null,
+              validator: (v) {
+                if (v != _passCtrl.text) return 'Passwords do not match';
+                return null;
+              },
             ),
-            const Spacer(),
+            const SizedBox(height: 24),
             _GoldButton(
               label: 'Create Account',
               loading: _loading,
@@ -371,11 +397,14 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true;
   bool _loading = false;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -383,7 +412,10 @@ class _LoginFormState extends State<_LoginForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await widget.auth.login(email: _emailCtrl.text.trim().toLowerCase());
+      await widget.auth.login(
+        email: _emailCtrl.text.trim().toLowerCase(),
+        password: _passCtrl.text,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -404,7 +436,6 @@ class _LoginFormState extends State<_LoginForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
             _AuthField(
               controller: _emailCtrl,
               label: 'Email',
@@ -412,7 +443,24 @@ class _LoginFormState extends State<_LoginForm> {
               keyboardType: TextInputType.emailAddress,
               validator: _validateEmail,
             ),
-            const Spacer(),
+            const SizedBox(height: 14),
+            _AuthField(
+              controller: _passCtrl,
+              label: 'Password',
+              icon: Icons.lock_outline,
+              obscureText: _obscure,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscure ? Icons.visibility_off : Icons.visibility,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Password is required' : null,
+            ),
+            const SizedBox(height: 24),
             _GoldButton(
               label: 'Log In',
               loading: _loading,
@@ -431,18 +479,18 @@ class _AuthField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
+  final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
-  final TextInputType? keyboardType;
   final String? Function(String?)? validator;
 
   const _AuthField({
     required this.controller,
     required this.label,
     required this.icon,
+    this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
-    this.keyboardType,
     this.validator,
   });
 
@@ -450,37 +498,33 @@ class _AuthField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      obscureText: obscureText,
       keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: const TextStyle(color: AppColors.textPrimary),
       validator: validator,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        labelStyle: const TextStyle(color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: AppColors.uploadZone,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: AppColors.background,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.panelBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.gold, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.gold),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent),
         ),
-        errorStyle: const TextStyle(fontSize: 11),
       ),
     );
   }
@@ -506,7 +550,6 @@ class _GoldButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
           foregroundColor: Colors.black,
-          disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -515,17 +558,10 @@ class _GoldButton extends StatelessWidget {
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                  color: Colors.black,
-                  strokeWidth: 2.5,
-                ),
+                    strokeWidth: 2, color: Colors.black),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
+            : Text(label,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
