@@ -49,7 +49,7 @@ class EditorStorage {
     ]);
   }
 
-  /// Reads previously saved values.  Returns default [EditorState] defaults
+  /// Reads previously saved values.  Returns [EditorState] defaults
   /// when no data has been written yet.
   static Future<SavedEditorData> load() async {
     final prefs = await SharedPreferences.getInstance();
