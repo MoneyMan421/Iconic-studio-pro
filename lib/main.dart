@@ -89,7 +89,16 @@ class IconStudioPro extends StatelessWidget {
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  final bool embeddedMode;
+  final EditorState? initialState;
+  final void Function(EditorState)? onStateChanged;
+
+  const StudioPage({
+    super.key,
+    this.embeddedMode = false,
+    this.initialState,
+    this.onStateChanged,
+  });
 
   @override
   State<StudioPage> createState() => _StudioPageState();
@@ -105,7 +114,11 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
-    _loadState();
+    if (widget.initialState != null) {
+      editorState = widget.initialState!;
+    } else {
+      _loadState();
+    }
   }
 
   /// Restores previously saved editor settings from persistent storage.
@@ -147,7 +160,12 @@ class _StudioPageState extends State<StudioPage> {
   /// Updates [editorState] and immediately persists the new value.
   void _setEditorState(EditorState s) {
     setState(() => editorState = s);
-    _saveState();
+    if (widget.onStateChanged != null) {
+      widget.onStateChanged!(s);
+    }
+    if (!widget.embeddedMode) {
+      _saveState();
+    }
   }
 
   Future<void> _pickImage() async {

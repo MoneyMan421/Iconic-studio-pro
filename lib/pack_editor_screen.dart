@@ -467,11 +467,12 @@ class _IconEditorSheetState extends State<IconEditorSheet> {
 
       if (widget.iconId != null) {
         // Update existing
-        await FirebaseService._packs
-            .doc(widget.packId)
-            .collection('icons')
-            .doc(widget.iconId)
-            .update({'name': _nameCtrl.text.trim(), 'editorSettings': settings});
+        await FirebaseService.updateIcon(
+          packId: widget.packId,
+          iconId: widget.iconId!,
+          name: _nameCtrl.text.trim(),
+          editorSettings: settings,
+        );
       } else {
         // Add new
         await FirebaseService.addIconToPack(
