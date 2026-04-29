@@ -2,6 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
 }
 
 def keystoreProperties = new Properties()
@@ -35,10 +36,11 @@ android {
 
     defaultConfig {
         applicationId "com.iconicstudio.pro"
-        minSdk flutter.minSdkVersion
+        minSdk 21
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName
+        multiDexEnabled true
     }
 
     buildTypes {
