@@ -14,7 +14,7 @@ void main() {
 
     testWidgets('renders key studio UI', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
+        MaterialApp(home: const StudioPage()),
       );
       await tester.pump();
 
@@ -44,7 +44,7 @@ void main() {
 
     testWidgets('export button is present and tappable', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
+        MaterialApp(home: const StudioPage()),
       );
       await tester.pump();
 
