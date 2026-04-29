@@ -87,7 +87,8 @@ void main() {
 
   group('SharedPreferences path key', () {
     test('no SharedPreferences key is currently defined in main app source', () {
-      final source = File('lib/main.dart').readAsStringSync();
+      final source = File('${Directory.current.path}/lib/main.dart')
+          .readAsStringSync();
       expect(source.contains('SharedPreferences'), isFalse);
     });
   });

@@ -467,8 +467,6 @@ class _StudioPageState extends State<StudioPage> {
           _StatItem(label: 'Quality', value: 'Ultra HD'),
           SizedBox(width: 48),
           _StatItem(label: 'Format', value: 'PNG'),
-          SizedBox(width: 48),
-          _StatItem(label: 'FPS', value: '120'),
         ],
       ),
     );
@@ -687,7 +685,7 @@ class PaywallModal extends StatelessWidget {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Priority support']),
             const SizedBox(height: 12),
             _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),

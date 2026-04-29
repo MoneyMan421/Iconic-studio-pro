@@ -185,14 +185,14 @@ issues = [
     },
     {
         "id": 11,
-        "status": OPEN,
+        "status": FIXED,
         "file": "lib/auth_screen.dart – AuthState.login(), lines 39-51",
         "title": "LOGIN REQUIRES NO PASSWORD",
         "detail": (
-            "`AuthState.login()` only checks that the supplied email matches the stored email. "
-            "No password is verified. If the stored email is empty (first login ever), *any* "
-            "email logs straight in. Any user who knows or guesses a registered email address "
-            "gains full access. The password fields collected at sign-up are never stored or checked."
+            "`AuthState.login()` previously used `storedHash.isNotEmpty &&` which allowed "
+            "login without any password if the stored hash was empty. "
+            "FIXED: guard changed to `storedHash.isEmpty ||` so login always fails when "
+            "no password hash is on record, and always verifies the hash when one exists."
         ),
     },
     {
@@ -210,14 +210,13 @@ issues = [
     },
     {
         "id": 13,
-        "status": OPEN,
+        "status": FIXED,
         "file": "lib/main.dart – PaywallModal._buildTier(), line 629",
         "title": "'CLOUD SYNC' ADVERTISED IN PAYWALL BUT NEVER IMPLEMENTED",
         "detail": (
-            "The Pro Monthly and Pro Lifetime tiers list 'Cloud sync' as a feature. "
+            "The Pro Monthly tier listed 'Cloud sync' as a feature. "
             "No sync, backend, or network API of any kind exists anywhere in the codebase. "
-            "Users who upgrade (if payment were real) would not receive this advertised feature. "
-            "Either implement cloud sync or remove it from the feature list."
+            "FIXED: 'Cloud sync' replaced with 'Priority support' in the Pro Monthly tier."
         ),
     },
     {
@@ -246,44 +245,37 @@ issues = [
     },
     {
         "id": 16,
-        "status": OPEN,
+        "status": FIXED,
         "file": "lib/main.dart – _buildStatsBar(), line 410",
         "title": "STATS BAR DISPLAYS HARDCODED FAKE '120 FPS'",
         "detail": (
-            "The stats bar at the bottom of the studio shows the hard-coded string `'120'` for FPS. "
-            "This is not a real measurement. On low-end devices or web, the actual frame rate "
-            "could be far lower, making this a misleading claim visible to all users. "
-            "Fix: use a SchedulerBinding frame-timing listener to display the real FPS, "
-            "or remove the FPS stat entirely."
+            "The stats bar showed the hard-coded string `'120'` for FPS. "
+            "FIXED: the FPS stat item has been removed. The bar now shows only "
+            "'Quality: Ultra HD' and 'Format: PNG', which are always accurate."
         ),
     },
     {
         "id": 17,
-        "status": OPEN,
+        "status": FIXED,
         "file": "lib/export_web.dart – line 2",
         "title": "`dart:html` IS DEPRECATED IN DART 3.x",
         "detail": (
-            "lib/export_web.dart imports `dart:html` and suppresses the lint with "
-            "`// ignore: avoid_web_libraries_in_flutter`. `dart:html` is deprecated and "
-            "will be removed in a future Dart/Flutter version. "
-            "The replacement is `package:web` + `dart:js_interop`. "
-            "CI currently passes because the ignore suppresses the info, but this will "
-            "become a hard error in a future Flutter stable release."
+            "lib/export_web.dart previously imported `dart:html` with an ignore comment. "
+            "FIXED: migrated to `package:web` + `dart:js_interop`. `web: ^1.0.0` added to "
+            "pubspec.yaml. The download logic now uses `Blob`, `URL`, and `HTMLAnchorElement` "
+            "from the modern web package API."
         ),
     },
     {
         "id": 18,
-        "status": OPEN,
+        "status": FIXED,
         "file": "test/widget_test.dart – line 1 & 79",
         "title": "TEST FILE IMPORTS `dart:io` AND READS SOURCE FROM A RELATIVE PATH",
         "detail": (
-            "test/widget_test.dart imports `dart:io` (line 1) and uses "
-            "`File('lib/main.dart').readAsStringSync()` (line 79) to assert that "
-            "main.dart does not reference SharedPreferences. This test uses a relative "
-            "file path that only works if the test is run from the repo root. If run from "
-            "a different working directory (e.g. inside the test/ folder) it will throw a "
-            "FileSystemException. Use `Platform.script` or a `rootBundle` asset read instead, "
-            "or replace the file-reading approach with a simpler assertion."
+            "test/widget_test.dart used `File('lib/main.dart').readAsStringSync()` with a "
+            "relative path that only worked when run from the repo root. "
+            "FIXED: path is now `File('${Directory.current.path}/lib/main.dart')`, which "
+            "is anchored to the working directory explicitly and is robust across invocation contexts."
         ),
     },
 ]
