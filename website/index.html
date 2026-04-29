@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ICON — Show Your Skills</title>
+<meta name="description" content="The most powerful icon pack studio ever built. Craft, animate, and deploy icons with diamond-precision effects."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#D4AF37;--gold2:#F4E4BC;--gold3:#8B6914;
+  --electric:#00D4FF;--electric2:#0088BB;
+  --fire:#FF6B00;--fire2:#FF3D00;
+  --bg:#040407;--bg2:#07080F;--bg3:#0D0F1A;
+  --panel:#0F111C;--panel2:#161929;
+  --border:#1E2235;--border2:#2A2F4A;
+  --text:#F0F2FF;--text2:#8B8FA8;--text3:#4A4E6A;
+  --font-hero:'Bebas Neue',sans-serif;
+  --font-body:'Rajdhani',sans-serif;
+  --font-mono:'Share Tech Mono',monospace;
+  --glow-gold:0 0 20px rgba(212,175,55,.4),0 0 60px rgba(212,175,55,.15);
+  --glow-electric:0 0 20px rgba(0,212,255,.4),0 0 60px rgba(0,212,255,.15);
+  --glow-fire:0 0 20px rgba(255,107,0,.5),0 0 80px rgba(255,61,0,.2);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:17px;line-height:1.6;overflow-x:hidden;cursor:none;}
+#cursor{position:fixed;width:12px;height:12px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:transform .1s,background .2s;mix-blend-mode:screen;}
+#cursor-ring{position:fixed;width:36px;height:36px;border:1px solid rgba(212,175,55,.5);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .3s cubic-bezier(.23,1,.32,1),width .2s,height .2s;}
+body:has(a:hover) #cursor{background:var(--electric);transform:translate(-50%,-50%) scale(1.5)}
+body:has(a:hover) #cursor-ring{width:50px;height:50px;border-color:rgba(0,212,255,.5)}
+body:has(button:hover) #cursor{background:var(--fire);transform:translate(-50%,-50%) scale(2)}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold3);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;background:linear-gradient(180deg,rgba(4,4,7,.95) 0%,transparent 100%);backdrop-filter:blur(4px);}
+.nav-logo{font-family:var(--font-hero);font-size:28px;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
+.nav-logo span{color:var(--electric);-webkit-text-fill-color:var(--electric)}
+.nav-links{display:flex;gap:32px;align-items:center;list-style:none}
+.nav-links a{color:var(--text2);text-decoration:none;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{padding:10px 24px;background:linear-gradient(135deg,var(--gold3),var(--gold));color:#000;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;border:none;cursor:none;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all .25s;display:inline-block;}
+.nav-cta:hover{background:linear-gradient(135deg,var(--gold),var(--gold2));transform:translateY(-1px)}
+
+/* HERO */
+#hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 60% 50%,rgba(212,175,55,.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 70% 40%,rgba(0,212,255,.04) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(255,107,0,.05) 0%,transparent 60%),var(--bg);}
+.hero-scanlines{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);opacity:.4;}
+.hero-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 40%,rgba(4,4,7,.7) 100%);}
+.hero-content{position:relative;z-index:10;padding:120px 48px 80px;max-width:720px;}
+.hero-badge{display:inline-flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border:1px solid rgba(212,175,55,.3);background:rgba(212,175,55,.05);margin-bottom:28px;font-family:var(--font-mono);font-size:11px;letter-spacing:2px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);animation:fadeSlideIn .8s cubic-bezier(.23,1,.32,1) both;}
+.hero-badge-dot{width:6px;height:6px;background:var(--fire);border-radius:50%;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.hero-title{font-family:var(--font-hero);font-size:clamp(60px,8vw,108px);line-height:.92;letter-spacing:2px;margin-bottom:20px;animation:fadeSlideIn .9s .1s cubic-bezier(.23,1,.32,1) both;}
+.hero-title .line1{display:block;background:linear-gradient(135deg,#fff 0%,var(--gold2) 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-title .line2{display:block;color:var(--electric);-webkit-text-fill-color:var(--electric);text-shadow:0 0 40px rgba(0,212,255,.4);}
+.hero-title .line3{display:block;color:var(--fire);-webkit-text-fill-color:var(--fire);text-shadow:0 0 40px rgba(255,107,0,.4);font-size:clamp(40px,5vw,64px);letter-spacing:8px;}
+.hero-sub{font-size:18px;color:var(--text2);font-weight:400;max-width:480px;margin-bottom:40px;line-height:1.7;animation:fadeSlideIn 1s .2s cubic-bezier(.23,1,.32,1) both;}
+.hero-sub strong{color:var(--gold);font-weight:600}
+.hero-actions{display:flex;gap:16px;flex-wrap:wrap;animation:fadeSlideIn 1s .3s cubic-bezier(.23,1,.32,1) both;}
+.btn-primary{padding:16px 36px;background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#000;font-family:var(--font-hero);font-size:18px;letter-spacing:3px;border:none;cursor:none;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);transition:all .25s;position:relative;overflow:hidden;}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.3) 50%,transparent 70%);transform:translateX(-100%);transition:transform .4s;}
+.btn-primary:hover::after{transform:translateX(100%)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:var(--glow-gold)}
+.btn-secondary{padding:16px 36px;background:transparent;color:var(--electric);font-family:var(--font-hero);font-size:18px;letter-spacing:3px;border:1px solid var(--electric);cursor:none;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);transition:all .25s;}
+.btn-secondary:hover{background:rgba(0,212,255,.1);box-shadow:var(--glow-electric);transform:translateY(-2px)}
+.hero-stats{display:flex;gap:40px;margin-top:56px;animation:fadeSlideIn 1s .4s cubic-bezier(.23,1,.32,1) both;}
+.hero-stat-num{font-family:var(--font-hero);font-size:36px;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-stat-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-family:var(--font-mono)}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* FLOATING ICONS */
+.floating-icons{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden;}
+.fi{position:absolute;font-size:24px;opacity:.15;animation:floatIcon linear infinite;}
+@keyframes floatIcon{0%{transform:translateY(100vh) rotate(0deg);opacity:0}10%{opacity:.15}90%{opacity:.15}100%{transform:translateY(-100px) rotate(360deg);opacity:0}}
+
+/* SECTIONS */
+section{padding:100px 48px}
+.section-tag{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:16px;display:block;}
+.section-title{font-family:var(--font-hero);font-size:clamp(40px,5vw,72px);line-height:1;letter-spacing:1px;margin-bottom:20px;}
+.section-sub{font-size:17px;color:var(--text2);max-width:560px;line-height:1.7}
+.divider{height:1px;margin:0 48px;background:linear-gradient(90deg,transparent,var(--border2),var(--gold3),var(--border2),transparent);}
+
+/* FEATURES */
+#features{background:var(--bg)}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);max-width:1400px;margin:60px auto 0;}
+.feature-card{background:var(--bg);padding:40px 32px;position:relative;overflow:hidden;transition:background .25s;}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--gold));transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.23,1,.32,1);}
+.feature-card:hover{background:var(--panel)}
+.feature-card:hover::before{transform:scaleX(1)}
+.feature-icon{font-size:36px;margin-bottom:20px;display:block;filter:drop-shadow(0 0 12px var(--accent,var(--gold)));}
+.feature-title{font-family:var(--font-hero);font-size:26px;letter-spacing:1px;margin-bottom:12px;color:var(--text);}
+.feature-desc{font-size:15px;color:var(--text2);line-height:1.7}
+.feature-tag{display:inline-block;margin-top:16px;padding:3px 10px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);color:var(--gold);font-family:var(--font-mono);font-size:10px;letter-spacing:1px;}
+
+/* PRICING */
+#pricing{background:var(--bg2)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;max-width:1100px;margin:60px auto 0;}
+.price-card{background:var(--panel);border:1px solid var(--border);padding:40px 32px;position:relative;overflow:hidden;transition:all .3s;}
+.price-card.featured{border-color:var(--gold);background:linear-gradient(135deg,rgba(212,175,55,.05) 0%,var(--panel) 100%);}
+.price-card.featured::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.price-card:hover{transform:translateY(-4px);border-color:var(--gold);}
+.price-badge{position:absolute;top:20px;right:20px;padding:4px 12px;background:var(--gold);color:#000;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:1px;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);}
+.price-tier{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-bottom:16px;}
+.price-amount{font-family:var(--font-hero);font-size:64px;line-height:1;letter-spacing:-1px;margin-bottom:4px;}
+.price-amount span{font-size:24px;color:var(--text2);font-family:var(--font-body);}
+.price-period{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:32px;}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:36px;}
+.price-features li{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text2);}
+.price-features li::before{content:'◆';color:var(--gold);font-size:8px;flex-shrink:0;}
+.price-features li.dim{opacity:.4}
+.price-features li.dim::before{color:var(--text3)}
+.price-btn{width:100%;padding:14px;font-family:var(--font-hero);font-size:18px;letter-spacing:2px;border:none;cursor:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all .25s;}
+.price-btn.gold{background:linear-gradient(135deg,var(--gold3),var(--gold));color:#000;}
+.price-btn.gold:hover{box-shadow:var(--glow-gold);transform:translateY(-1px)}
+.price-btn.outline{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.price-btn.outline:hover{border-color:var(--gold);color:var(--gold)}
+
+/* EDITOR PREVIEW */
+#editor{background:var(--bg3)}
+.editor-layout{display:grid;grid-template-columns:300px 1fr;gap:24px;max-width:1400px;margin:60px auto 0;}
+.editor-controls{background:var(--panel);border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:20px;position:relative;overflow:hidden;}
+.editor-controls::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.ctrl-group-title{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.ctrl-group-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.ctrl-row{display:flex;flex-direction:column;gap:6px}
+.ctrl-label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);font-weight:600;}
+.ctrl-val{color:var(--gold);font-family:var(--font-mono);font-size:13px}
+.ctrl-slider{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:2px;outline:none;cursor:none;background:linear-gradient(90deg,var(--gold) var(--pct,50%),var(--border2) var(--pct,50%));}
+.ctrl-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--gold);border-radius:50%;box-shadow:0 0 8px rgba(212,175,55,.6);transition:transform .15s;}
+.ctrl-slider::-webkit-slider-thumb:hover{transform:scale(1.4)}
+.effect-btns{display:flex;flex-wrap:wrap;gap:8px}
+.effect-btn{padding:6px 14px;background:var(--panel2);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);}
+.effect-btn:hover,.effect-btn.active{background:rgba(212,175,55,.1);border-color:var(--gold);color:var(--gold);}
+.canvas-main{background:radial-gradient(ellipse at center,rgba(212,175,55,.04) 0%,var(--panel) 70%);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;min-height:480px;position:relative;overflow:hidden;}
+.canvas-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(212,175,55,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.04) 1px,transparent 1px);background-size:40px 40px;}
+.gem-preview{position:absolute;width:220px;height:220px;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;}
+#gemCanvas{width:100%;height:100%;border-radius:50%;}
+.gem-ring{position:absolute;inset:-8px;border:1px solid rgba(212,175,55,.3);border-radius:50%;animation:ringPulse 3s ease-in-out infinite;}
+.gem-ring2{position:absolute;inset:-20px;border:1px solid rgba(212,175,55,.1);border-radius:50%;animation:ringPulse 3s .5s ease-in-out infinite;}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.04);opacity:1}}
+.icon-preview-stage{position:relative;z-index:2;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:32px;}
+.icon-frame{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:none;}
+.icon-box{width:80px;height:80px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:32px;transition:all .25s;position:relative;overflow:hidden;background:var(--bg);}
+.icon-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,175,55,.1) 0%,transparent 70%);opacity:0;transition:opacity .25s;}
+.icon-frame:hover .icon-box::before{opacity:1}
+.icon-frame:hover .icon-box{border-color:var(--gold);transform:scale(1.05)}
+.icon-size-label{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:1px;}
+
+/* CTA SECTION */
+#cta{background:var(--bg);text-align:center;padding:120px 48px;}
+.cta-glow{position:relative;display:inline-block;}
+.cta-glow::before{content:'';position:absolute;inset:-40px;background:radial-gradient(ellipse at center,rgba(212,175,55,.12) 0%,transparent 70%);pointer-events:none;}
+
+/* FOOTER */
+footer{background:var(--bg);border-top:1px solid var(--border);padding:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;}
+.footer-logo{font-family:var(--font-hero);font-size:24px;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.footer-links{display:flex;gap:24px;list-style:none;}
+.footer-links a{color:var(--text3);text-decoration:none;font-size:13px;font-family:var(--font-mono);letter-spacing:1px;transition:color .2s;}
+.footer-links a:hover{color:var(--gold)}
+.footer-copy{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:1px;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  nav{padding:16px 20px;}
+  .nav-links{display:none}
+  section{padding:60px 20px}
+  .hero-content{padding:100px 20px 60px}
+  .editor-layout{grid-template-columns:1fr}
+  footer{padding:32px 20px;flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">ICONIC<span>.</span>PRO</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#editor">Editor</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#" class="nav-cta">Launch App</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-scanlines"></div>
+  <div class="hero-vignette"></div>
+  <div class="floating-icons" id="floatingIcons"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      ELITE ICON CREATION PLATFORM
+    </div>
+    <h1 class="hero-title">
+      <span class="line1">CRAFT YOUR</span>
+      <span class="line2">ICON PACK.</span>
+      <span class="line3">GO ELITE.</span>
+    </h1>
+    <p class="hero-sub">
+      The most powerful icon pack studio ever built.
+      <strong>Diamond-precision shaders.</strong> Unlimited packs.
+      Publish to the marketplace and get paid.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary">START CREATING</button>
+      <button class="btn-secondary">VIEW MARKETPLACE</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">50K+</div>
+        <div class="hero-stat-label">Icons Created</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">2.4K</div>
+        <div class="hero-stat-label">Pack Creators</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">20+</div>
+        <div class="hero-stat-label">Shader Effects</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURES -->
+<section id="features">
+  <span class="section-tag">// CAPABILITIES</span>
+  <h2 class="section-title">Built Different.<br>Built Elite.</h2>
+  <p class="section-sub">Every tool you need to create, publish, and profit from professional icon packs.</p>
+  <div class="features-grid">
+    <div class="feature-card" style="--accent:var(--gold)">
+      <span class="feature-icon">💎</span>
+      <div class="feature-title">Diamond Shader Engine</div>
+      <p class="feature-desc">Real-time GLSL diamond refraction, sparkle, and facet effects. Math-precise light calculation for every icon.</p>
+      <span class="feature-tag">REAL-TIME GLSL</span>
+    </div>
+    <div class="feature-card" style="--accent:var(--electric)">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">Unlimited Icon Packs</div>
+      <p class="feature-desc">Create as many packs as you want. Organize, label, and manage your entire icon library in one place.</p>
+      <span class="feature-tag">PRO FEATURE</span>
+    </div>
+    <div class="feature-card" style="--accent:var(--fire)">
+      <span class="feature-icon">🔥</span>
+      <div class="feature-title">Marketplace Revenue</div>
+      <p class="feature-desc">Publish your packs. Set your price. You keep 70% of every sale. Passive income from your creativity.</p>
+      <span class="feature-tag">70% REVENUE SHARE</span>
+    </div>
+    <div class="feature-card" style="--accent:var(--gold)">
+      <span class="feature-icon">☁️</span>
+      <div class="feature-title">Cloud Sync</div>
+      <p class="feature-desc">Your packs live in the cloud. Access, edit, and export from any device, any time.</p>
+      <span class="feature-tag">FIREBASE POWERED</span>
+    </div>
+    <div class="feature-card" style="--accent:var(--electric)">
+      <span class="feature-icon">📦</span>
+      <div class="feature-title">Multi-Format Export</div>
+      <p class="feature-desc">Export to PNG, SVG, ICO, ICNS, and Android XML. One click to get your pack ready for any platform.</p>
+      <span class="feature-tag">ALL FORMATS</span>
+    </div>
+    <div class="feature-card" style="--accent:var(--fire)">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">AI Icon Generation</div>
+      <p class="feature-desc">Describe your icon. AI generates it in seconds. Apply shaders and export instantly. Coming soon.</p>
+      <span class="feature-tag">COMING SOON</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EDITOR PREVIEW -->
+<section id="editor">
+  <span class="section-tag">// LIVE PREVIEW</span>
+  <h2 class="section-title">The Editor.<br>Pure Power.</h2>
+  <p class="section-sub">Real-time diamond shader rendering. Every adjustment is instant. Every export is flawless.</p>
+  <div class="editor-layout">
+    <div class="editor-controls">
+      <div>
+        <div class="ctrl-group-title">SHADER</div>
+        <div class="effect-btns">
+          <button class="effect-btn active">Diamond</button>
+          <button class="effect-btn">Glass</button>
+          <button class="effect-btn">Neon</button>
+          <button class="effect-btn">Matte</button>
+          <button class="effect-btn">Metal</button>
+          <button class="effect-btn">Frost</button>
+        </div>
+      </div>
+      <div>
+        <div class="ctrl-group-title">TRANSFORM</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>Scale</span><span class="ctrl-val" id="scaleVal">50%</span></div>
+          <input type="range" class="ctrl-slider" id="scaleSlider" min="0" max="100" value="50">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>Rotation</span><span class="ctrl-val" id="rotVal">0°</span></div>
+          <input type="range" class="ctrl-slider" id="rotSlider" min="-180" max="180" value="0">
+        </div>
+      </div>
+      <div>
+        <div class="ctrl-group-title">EFFECTS</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>Refraction</span><span class="ctrl-val" id="refrVal">2.42</span></div>
+          <input type="range" class="ctrl-slider" id="refrSlider" min="1" max="4" step="0.01" value="2.42">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>Sparkle</span><span class="ctrl-val" id="sparkVal">80%</span></div>
+          <input type="range" class="ctrl-slider" id="sparkSlider" min="0" max="100" value="80">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>Brightness</span><span class="ctrl-val" id="brightVal">100%</span></div>
+          <input type="range" class="ctrl-slider" id="brightSlider" min="0" max="200" value="100">
+        </div>
+      </div>
+    </div>
+    <div class="canvas-main">
+      <div class="canvas-grid"></div>
+      <div class="gem-preview">
+        <canvas id="gemCanvas" width="220" height="220"></canvas>
+        <div class="gem-ring"></div>
+        <div class="gem-ring2"></div>
+      </div>
+      <div class="icon-preview-stage">
+        <div class="icon-frame">
+          <div class="icon-box">💎</div>
+          <div class="icon-size-label">512×512</div>
+        </div>
+        <div class="icon-frame selected">
+          <div class="icon-box">⚡</div>
+          <div class="icon-size-label">256×256</div>
+        </div>
+        <div class="icon-frame">
+          <div class="icon-box">🔥</div>
+          <div class="icon-size-label">128×128</div>
+        </div>
+        <div class="icon-frame">
+          <div class="icon-box">🌊</div>
+          <div class="icon-size-label">96×96</div>
+        </div>
+        <div class="icon-frame">
+          <div class="icon-box">🎯</div>
+          <div class="icon-size-label">64×64</div>
+        </div>
+        <div class="icon-frame">
+          <div class="icon-box">✨</div>
+          <div class="icon-size-label">48×48</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRICING -->
+<section id="pricing">
+  <span class="section-tag">// PLANS</span>
+  <h2 class="section-title">Pick Your Tier.</h2>
+  <p class="section-sub">Start free. Go Pro when you're ready to go elite.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Free</div>
+      <div class="price-amount" style="color:var(--text2)">$0</div>
+      <div class="price-period">forever</div>
+      <ul class="price-features">
+        <li>1 icon pack (10 icons max)</li>
+        <li>2 free imports</li>
+        <li>Diamond shader preview</li>
+        <li>PNG export</li>
+        <li class="dim">Unlimited packs</li>
+        <li class="dim">Cloud sync</li>
+        <li class="dim">Marketplace publishing</li>
+      </ul>
+      <button class="price-btn outline">GET STARTED</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-badge">MOST POPULAR</div>
+      <div class="price-tier">Pro</div>
+      <div class="price-amount" style="color:var(--gold)">$4<span>.99/mo</span></div>
+      <div class="price-period">or $29.99/year — save 50%</div>
+      <ul class="price-features">
+        <li>Unlimited icon packs</li>
+        <li>Unlimited imports</li>
+        <li>20+ shader effects</li>
+        <li>All export formats</li>
+        <li>Cloud sync across devices</li>
+        <li>Publish to marketplace</li>
+        <li class="dim">Team packs</li>
+      </ul>
+      <button class="price-btn gold">GO PRO</button>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Studio</div>
+      <div class="price-amount" style="color:var(--electric)">$14<span>.99/mo</span></div>
+      <div class="price-period">everything in pro, plus:</div>
+      <ul class="price-features">
+        <li>Team packs & collaboration</li>
+        <li>Brand kit lock</li>
+        <li>Batch import & export</li>
+        <li>AI icon generation</li>
+        <li>Priority support</li>
+        <li>Revenue analytics</li>
+        <li>Early access to features</li>
+      </ul>
+      <button class="price-btn outline" style="border-color:var(--electric2);color:var(--electric)">GO STUDIO</button>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-glow">
+    <span class="section-tag" style="text-align:center;display:block">// YOUR MOVE</span>
+    <h2 class="section-title" style="font-size:clamp(48px,7vw,96px);margin-bottom:24px">
+      Stop Customizing.<br>
+      <span style="color:var(--gold)">Start Creating.</span>
+    </h2>
+    <p class="section-sub" style="margin:0 auto 40px;text-align:center">
+      Build the icon packs you always wanted. Sell them. Own the market.
+    </p>
+    <button class="btn-primary" style="font-size:22px;padding:20px 56px;letter-spacing:4px">LAUNCH THE STUDIO</button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">ICONIC.PRO</div>
+  <ul class="footer-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#">Marketplace</a></li>
+    <li><a href="#">Docs</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 ICONIC.PRO — ALL RIGHTS RESERVED</div>
+</footer>
+
+<script>
+// Custom cursor
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+  ring.style.left = e.clientX + 'px';
+  ring.style.top = e.clientY + 'px';
+});
+
+// Floating icons
+const icons = ['💎','⚡','🔥','✨','🎯','🌊','🎨','🔮','⭐','🏆'];
+const container = document.getElementById('floatingIcons');
+for(let i = 0; i < 15; i++){
+  const el = document.createElement('div');
+  el.className = 'fi';
+  el.textContent = icons[Math.floor(Math.random()*icons.length)];
+  el.style.left = Math.random()*100 + '%';
+  el.style.animationDuration = (12 + Math.random()*20) + 's';
+  el.style.animationDelay = (-Math.random()*20) + 's';
+  el.style.fontSize = (16 + Math.random()*20) + 'px';
+  container.appendChild(el);
+}
+
+// Slider interactions
+function setupSlider(sliderId, valId, formatter){
+  const slider = document.getElementById(sliderId);
+  const val = document.getElementById(valId);
+  if(!slider) return;
+  function update(){
+    const pct = ((slider.value - slider.min)/(slider.max - slider.min)*100);
+    slider.style.setProperty('--pct', pct + '%');
+    val.textContent = formatter(slider.value);
+  }
+  slider.addEventListener('input', update);
+  update();
+}
+setupSlider('scaleSlider','scaleVal', v => v + '%');
+setupSlider('rotSlider','rotVal', v => v + '°');
+setupSlider('refrSlider','refrVal', v => parseFloat(v).toFixed(2));
+setupSlider('sparkSlider','sparkVal', v => v + '%');
+setupSlider('brightSlider','brightVal', v => v + '%');
+
+// Effect buttons
+document.querySelectorAll('.effect-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.effect-btns').querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Gem canvas animation
+const canvas = document.getElementById('gemCanvas');
+const ctx = canvas.getContext('2d');
+let t = 0;
+function drawGem(){
+  ctx.clearRect(0,0,220,220);
+  const cx = 110, cy = 110, r = 100;
+  // Outer glow
+  const grd = ctx.createRadialGradient(cx,cy,20,cx,cy,r);
+  grd.addColorStop(0,'rgba(212,175,55,0.3)');
+  grd.addColorStop(0.5,'rgba(0,212,255,0.1)');
+  grd.addColorStop(1,'rgba(212,175,55,0)');
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle=grd;
+  ctx.fill();
+  // Facets
+  const facets = 8;
+  for(let i=0;i<facets;i++){
+    const a1 = (i/facets)*Math.PI*2 + t*0.3;
+    const a2 = ((i+1)/facets)*Math.PI*2 + t*0.3;
+    const brightness = 0.3 + 0.5*Math.sin(t*2 + i*0.8);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r*0.85,a1,a2);
+    ctx.closePath();
+    const r1 = Math.floor(212*brightness);
+    const g1 = Math.floor(175*brightness);
+    const b1 = Math.floor(55*brightness);
+    ctx.fillStyle = `rgba(${r1},${g1},${b1},0.6)`;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(212,175,55,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  // Center sparkle
+  const sparkle = ctx.createRadialGradient(cx,cy,0,cx,cy,40);
+  sparkle.addColorStop(0,'rgba(255,255,255,0.8)');
+  sparkle.addColorStop(0.3,'rgba(212,175,55,0.3)');
+  sparkle.addColorStop(1,'transparent');
+  ctx.beginPath();
+  ctx.arc(cx,cy,40,0,Math.PI*2);
+  ctx.fillStyle=sparkle;
+  ctx.fill();
+  t += 0.02;
+  requestAnimationFrame(drawGem);
+}
+drawGem();
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if(target){ e.preventDefault(); target.scrollIntoView({behavior:'smooth'}); }
+  });
+});
+</script>
+</body>
+</html>
