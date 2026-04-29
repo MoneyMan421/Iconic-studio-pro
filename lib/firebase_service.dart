@@ -125,6 +125,19 @@ class FirebaseService {
 
   // ── ICONS ────────────────────────────────────────────────────────────────
 
+  static Future<void> updateIcon({
+    required String packId,
+    required String iconId,
+    required String name,
+    required Map<String, dynamic> editorSettings,
+  }) async {
+    await _packs
+        .doc(packId)
+        .collection('icons')
+        .doc(iconId)
+        .update({'name': name, 'editorSettings': editorSettings});
+  }
+
   static Future<DocumentReference> addIconToPack({
     required String packId,
     required String name,
