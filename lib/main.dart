@@ -63,10 +63,10 @@ class EditorState {
   );
 }
 
-void main() => runApp(const IconStudioPro());
+void main() => runApp(const IconixForge());
 
-class IconStudioPro extends StatelessWidget {
-  const IconStudioPro({super.key});
+class IconixForge extends StatelessWidget {
+  const IconixForge({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -364,8 +364,8 @@ class _StudioPageState extends State<StudioPage> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('IconStudio', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              Text('PRO', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.gold, letterSpacing: 2)),
+              Text('ICONIX', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('FORGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.gold, letterSpacing: 2)),
             ],
           ),
           const Spacer(),

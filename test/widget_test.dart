@@ -18,7 +18,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('IconStudio'), findsOneWidget);
+      expect(find.text('ICONIX'), findsOneWidget);
       expect(find.text('Export Icon'), findsOneWidget);
     });
   });

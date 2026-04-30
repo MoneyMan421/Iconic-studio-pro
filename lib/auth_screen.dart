@@ -188,7 +188,7 @@ class _AuthScreenState extends State<AuthScreen>
                   const Icon(Icons.diamond, color: AppColors.gold, size: 64),
                   const SizedBox(height: 12),
                   const Text(
-                    'IconStudio',
+                    'ICONIX',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -196,7 +196,7 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                   const Text(
-                    'PRO',
+                    'FORGE',
                     style: TextStyle(
                       color: AppColors.gold,
                       fontSize: 13,
