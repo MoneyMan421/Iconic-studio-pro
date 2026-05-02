@@ -156,6 +156,11 @@ class _StudioPageState extends State<StudioPage> {
     );
   }
 
+  /// Called at the end of a slider drag to persist settings (skipped in embedded mode).
+  void _handleSliderEnd(double _) {
+    if (!widget.embeddedMode) _saveState();
+  }
+
   /// Updates [editorState] in the UI and notifies an embedded parent if set.
   /// Persistence is handled separately via [_saveState] on slider interaction end.
   void _setEditorState(EditorState s) {
@@ -433,7 +438,7 @@ class _StudioPageState extends State<StudioPage> {
             min: min,
             max: max,
             onChanged: onChanged,
-            onChangeEnd: (_) { if (!widget.embeddedMode) _saveState(); },
+            onChangeEnd: _handleSliderEnd,
           ),
         ],
       ),
