@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'editor_storage.dart';
@@ -89,7 +88,16 @@ class IconStudioPro extends StatelessWidget {
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  final bool embeddedMode;
+  final EditorState? initialState;
+  final void Function(EditorState)? onStateChanged;
+
+  const StudioPage({
+    super.key,
+    this.embeddedMode = false,
+    this.initialState,
+    this.onStateChanged,
+  });
 
   @override
   State<StudioPage> createState() => _StudioPageState();
@@ -105,7 +113,11 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
-    _loadState();
+    if (widget.embeddedMode && widget.initialState != null) {
+      editorState = widget.initialState!;
+    } else {
+      _loadState();
+    }
   }
 
   /// Restores previously saved editor settings from persistent storage.
@@ -144,10 +156,11 @@ class _StudioPageState extends State<StudioPage> {
     );
   }
 
-  /// Updates [editorState] and immediately persists the new value.
+  /// Updates [editorState] in the UI and notifies an embedded parent if set.
+  /// Persistence is handled separately via [_saveState] on slider interaction end.
   void _setEditorState(EditorState s) {
     setState(() => editorState = s);
-    _saveState();
+    widget.onStateChanged?.call(s);
   }
 
   Future<void> _pickImage() async {
@@ -182,7 +195,7 @@ class _StudioPageState extends State<StudioPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Pro upgrade coming soon! Thank you for your interest.'),
-              backgroundColor: Color(0xFFD4AF37),
+              backgroundColor: AppColors.gold,
             ),
           );
         },
@@ -415,7 +428,13 @@ class _StudioPageState extends State<StudioPage> {
             ],
           ),
           const SizedBox(height: 8),
-          Slider(value: value, min: min, max: max, onChanged: onChanged),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+            onChangeEnd: (_) { if (!widget.embeddedMode) _saveState(); },
+          ),
         ],
       ),
     );

@@ -34,7 +34,7 @@ service cloud.firestore {
       allow read: if resource.data.isPublic == true || request.auth.uid == resource.data.ownerId;
       allow write: if request.auth != null && request.auth.uid == resource.data.ownerId;
       match /icons/{iconId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/packs/$(packId)).data.ownerId;
       }
     }
   }
@@ -47,11 +47,11 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /icons/{userId}/{allPaths=**} {
-      allow read: if true;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     match /thumbnails/{userId}/{allPaths=**} {
-      allow read: if true;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }

@@ -77,6 +77,9 @@ class FirebaseService {
     required String description,
     bool isPublic = false,
   }) async {
+    if (uid == null) {
+      throw Exception('Must be signed in to create a pack.');
+    }
     return _packs.add({
       'ownerId': uid,
       'ownerName': currentUser?.displayName ?? 'Anonymous',
@@ -99,6 +102,9 @@ class FirebaseService {
   }
 
   static Stream<QuerySnapshot> getMarketplacePacks() {
+    // NOTE: this query requires a composite Firestore index on
+    // (isPublic ASC, price ASC, downloads DESC).
+    // Create it at: Firebase Console → Firestore → Indexes → Composite.
     return _packs
         .where('isPublic', isEqualTo: true)
         .where('price', isGreaterThan: 0)
@@ -159,6 +165,14 @@ class FirebaseService {
       'iconCount': FieldValue.increment(-1),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  static Future<void> updateIcon(
+    String packId,
+    String iconId,
+    Map<String, dynamic> data,
+  ) async {
+    await _packs.doc(packId).collection('icons').doc(iconId).update(data);
   }
 
   // ── STORAGE ──────────────────────────────────────────────────────────────

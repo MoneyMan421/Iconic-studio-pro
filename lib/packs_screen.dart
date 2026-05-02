@@ -51,6 +51,8 @@ class PacksScreen extends StatelessWidget {
         description: descCtrl.text.trim(),
       );
     }
+    nameCtrl.dispose();
+    descCtrl.dispose();
   }
 
   Widget _dialogField(

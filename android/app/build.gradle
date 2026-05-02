@@ -2,7 +2,12 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services"
+}
+
+// Apply Google Services plugin only when google-services.json is present,
+// so the project can still be analyzed/built in CI without committing secrets.
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
 }
 
 def keystoreProperties = new Properties()
