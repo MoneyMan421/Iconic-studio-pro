@@ -11,45 +11,50 @@ class PacksScreen extends StatelessWidget {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.panel,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('New Icon Pack',
-            style: TextStyle(color: AppColors.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _dialogField(nameCtrl, 'Pack Name', Icons.diamond_outlined),
-            const SizedBox(height: 12),
-            _dialogField(descCtrl, 'Description (optional)', Icons.notes),
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: AppColors.panel,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('New Icon Pack',
+              style: TextStyle(color: AppColors.textPrimary)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _dialogField(nameCtrl, 'Pack Name', Icons.diamond_outlined),
+              const SizedBox(height: 12),
+              _dialogField(descCtrl, 'Description (optional)', Icons.notes),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Create',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: Colors.black,
-            ),
-            child: const Text('Create',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && nameCtrl.text.trim().isNotEmpty) {
-      await FirebaseService.createPack(
-        name: nameCtrl.text.trim(),
-        description: descCtrl.text.trim(),
       );
+
+      if (confirmed == true && nameCtrl.text.trim().isNotEmpty) {
+        await FirebaseService.createPack(
+          name: nameCtrl.text.trim(),
+          description: descCtrl.text.trim(),
+        );
+      }
+    } finally {
+      nameCtrl.dispose();
+      descCtrl.dispose();
     }
     nameCtrl.dispose();
     descCtrl.dispose();
