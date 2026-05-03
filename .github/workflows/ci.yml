@@ -77,3 +77,11 @@ jobs:
 
       - name: Build debug app
         run: ${{ matrix.command }}
+
+      - name: Upload Android APK (installable on your phone)
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: iconic-studio-pro-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
