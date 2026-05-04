@@ -1,0 +1,70 @@
+---
+# Fill in the fields below to create a basic custom agent for your repository.
+# The Copilot CLI can be used for local testing: https://gh.io/customagents/cli
+# To make this agent available, merge this file into the default repository branch.
+# For format details, see: https://gh.io/customagents/config
+
+name:pilot
+description:
+--- import { useFrontendTool } from "@copilotkit/react-core/v2";
+
+export const Chat = () => {
+  // ...
+
+  // Define an action that will show a custom component
+  useFrontendTool({
+    name: "showCustomComponent",
+    // Handle the tool on the frontend
+    handler: () => {
+      return "Foo, Bar, Baz";
+    },
+    // Render a custom component for the underlying data
+    render: ({ result, args, status}) => {
+      return <div style={{
+        backgroundColor: "red",
+        padding: "10px",
+        borderRadius: "5px",
+      }}>
+        <p>Custom component</p>
+        <p>Result: {result}</p>
+        <p>Args: {JSON.stringify(args)}</p>
+        <p>Status: {status}</p>
+      </div>;
+    }
+  });
+
+  // ...
+
+  return <div>
+    {messages.map((message) => (
+      <p key={message.id}>
+        {message.role === "user" ? "User: " : "Assistant: "}
+        {message.content}
+        {/* Render the generative UI if it exists */}
+        {message.role === "assistant" && message.generativeUI?.()}
+      </p>
+    ))}
+  </div>
+};
+
+import { useCopilotKit, useFrontendTool } from "@copilotkit/react-core/v2";
+
+export function ToolButton() {
+  const { copilotkit } = useCopilotKit();
+
+  useFrontendTool({
+    name: "summarize",
+    description: "Summarize the document",
+    handler: async () => { /* ... */ },
+  });
+
+  return (
+    <button onClick={() => copilotkit.runTool({ name: "summarize" })}>
+      Summarize
+    </button>
+  );
+}
+# My Agent
+always ready for action when tools are involved 
+Describe what your agent does here.
+expert with tools unstoppable when it has a good tool
