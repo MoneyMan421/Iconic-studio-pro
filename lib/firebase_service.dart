@@ -161,6 +161,18 @@ class FirebaseService {
     });
   }
 
+  static Future<void> updateIcon(
+    String packId,
+    String iconId,
+    Map<String, dynamic> data,
+  ) async {
+    await _packs
+        .doc(packId)
+        .collection('icons')
+        .doc(iconId)
+        .update(data);
+  }
+
   // ── STORAGE ──────────────────────────────────────────────────────────────
 
   static Future<String> uploadIconImage({
