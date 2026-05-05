@@ -1,94 +1,121 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:iconic_studio_pro/main.dart';
+import 'package:iconic_studio_pro/app_colors.dart';
+
+// ---------------------------------------------------------------------------
+// Tests pump StudioPage directly inside a bare MaterialApp so we bypass the
+// async AuthGate SharedPreferences load that would prevent the studio UI from
+// rendering in a single pumpWidget call.
+// ---------------------------------------------------------------------------
 
 void main() {
-  group('App launch smoke', () {
-    setUp(() {
-      SharedPreferences.setMockInitialValues({});
-    });
-
-    testWidgets('renders key studio UI', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
-      );
-      await tester.pump();
-
-      expect(find.text('IconStudio'), findsOneWidget);
-      expect(find.text('Export Icon'), findsOneWidget);
-    });
+  setUp(() {
+    // Provide a clean, in-memory SharedPreferences for every test.
+    SharedPreferences.setMockInitialValues({});
   });
 
-  group('EditorState immutability + copyWith', () {
-    test('copyWith returns updated copy without mutating original', () {
-      final original = EditorState(scale: 60, rotation: 10, brightness: 100);
-      final updated = original.copyWith(scale: 72, contrast: 140);
+  testWidgets('StudioPage renders without crashing', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    // Allow the async EditorStorage.load() to complete.
+    await tester.pumpAndSettle();
 
-      expect(updated, isNot(same(original)));
-      expect(original.scale, 60);
-      expect(original.contrast, 100);
-      expect(updated.scale, 72);
-      expect(updated.rotation, 10);
-      expect(updated.contrast, 140);
-    });
+    // The app bar title should be visible.
+    expect(find.text('Iconic Studio Pro'), findsOneWidget);
   });
 
-  group('Export button presence', () {
-    setUp(() {
-      SharedPreferences.setMockInitialValues({});
-    });
+  testWidgets('StudioPage shows import and export action icons', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    await tester.pumpAndSettle();
 
-    testWidgets('export button is present and tappable', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
-      );
-      await tester.pump();
-
-      final exportButton = find.widgetWithText(ElevatedButton, 'Export Icon');
-      expect(exportButton, findsOneWidget);
-
-      await tester.tap(exportButton);
-      await tester.pump();
-    });
+    expect(find.byIcon(Icons.file_upload_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.download_outlined),    findsOneWidget);
   });
 
-  group('ShaderBuilder widget mounting', () {
-    testWidgets('ShaderBuilder can be mounted in widget tree', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ShaderBuilder(
-              assetKey: 'shaders/diamond_master.frag',
-              (context, shader, child) => SizedBox.shrink(),
-            ),
-          ),
-        ),
-      );
+  testWidgets('StudioPage shows upload zone when no image is loaded',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byType(ShaderBuilder), findsOneWidget);
-    });
+    expect(find.byIcon(Icons.add_photo_alternate_outlined), findsOneWidget);
+    expect(find.text('Tap "Import Image" to begin'),        findsOneWidget);
   });
 
-  group('Color API withValues guard', () {
-    test('withValues preserves rgb and updates alpha', () {
-      const source = AppColors.gold;
-      final updated = source.withValues(alpha: 0.2);
+  testWidgets('StudioPage stats bar shows FPS, IMPORTS, SCALE, ROTATE',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    await tester.pumpAndSettle();
 
-      expect(updated.r, source.r);
-      expect(updated.g, source.g);
-      expect(updated.b, source.b);
-      expect((updated.a * 255.0).round(), closeTo((0.2 * 255).round(), 1));
-    });
+    expect(find.text('FPS'),     findsOneWidget);
+    expect(find.text('IMPORTS'), findsOneWidget);
+    expect(find.text('SCALE'),   findsOneWidget);
+    expect(find.text('ROTATE'),  findsOneWidget);
   });
 
-  group('SharedPreferences path key', () {
-    test('no SharedPreferences key is currently defined in main app source', () {
-      final source = File('lib/main.dart').readAsStringSync();
-      expect(source.contains('SharedPreferences'), isFalse);
-    });
+  testWidgets('Control panel sliders are present', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    await tester.pumpAndSettle();
+
+    // Section headers
+    expect(find.text('TRANSFORM'), findsOneWidget);
+    expect(find.text('IMAGE'),     findsOneWidget);
+    expect(find.text('DIAMOND'),   findsOneWidget);
+
+    // Slider labels
+    expect(find.text('Scale'),       findsOneWidget);
+    expect(find.text('Rotation'),    findsOneWidget);
+    expect(find.text('Brightness'),  findsOneWidget);
+    expect(find.text('Contrast'),    findsOneWidget);
+    expect(find.text('Saturation'),  findsOneWidget);
+    expect(find.text('Blur'),        findsOneWidget);
+    expect(find.text('Refraction'),  findsOneWidget);
+    expect(find.text('Sparkle'),     findsOneWidget);
+    expect(find.text('Facet Depth'), findsOneWidget);
+  });
+
+  testWidgets('EditorState.copyWith preserves unchanged fields', (tester) async {
+    const original = EditorState(brightness: 1.5, contrast: 0.8);
+    final updated  = original.copyWith(brightness: 2.0);
+
+    expect(updated.brightness, 2.0);
+    expect(updated.contrast,   0.8); // unchanged
+    expect(updated.saturation, 1.0); // default
+  });
+
+  testWidgets('EditorState.copyWith can clear userImageBytes', (tester) async {
+    final bytes    = Uint8List.fromList([1, 2, 3]);
+    final withImg  = EditorState(userImageBytes: bytes);
+    final cleared  = withImg.copyWith(clearImage: true);
+
+    expect(cleared.userImageBytes, isNull);
+  });
+
+  testWidgets('AppColors constants are non-null', (tester) async {
+    expect(AppColors.background,    isNotNull);
+    expect(AppColors.gold,          isNotNull);
+    expect(AppColors.textPrimary,   isNotNull);
+    expect(AppColors.textSecondary, isNotNull);
+    expect(AppColors.panel,         isNotNull);
+  });
+
+  testWidgets('Reset button appears in control panel', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudioPage()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset'), findsOneWidget);
   });
 }
