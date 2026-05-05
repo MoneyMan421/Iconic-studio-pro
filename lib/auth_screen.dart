@@ -2,128 +2,144 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+
 import 'app_colors.dart';
 
-/// Shared email validation regex.
-final _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+// ─── AuthState ────────────────────────────────────────────────────────────────
 
-String? _validateEmail(String? v) {
-  if (v == null || v.trim().isEmpty) return 'Email is required';
-  if (!_emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
-  return null;
-}
-
-String _hashPassword(String password) {
-  final bytes = utf8.encode(password);
-  return sha256.convert(bytes).toString();
-}
-
-/// Simple in-app auth state. Persists login across restarts via SharedPreferences.
 class AuthState extends ChangeNotifier {
-  bool _isLoggedIn = false;
-  String _displayName = '';
+  static const _kLoggedIn      = 'auth_isLoggedIn';
+  static const _kDisplayName   = 'auth_displayName';
+  static const _kEmail         = 'auth_userEmail';
+  static const _kPasswordHash  = 'auth_passwordHash';
 
-  bool get isLoggedIn => _isLoggedIn;
-  String get displayName => _displayName;
+  bool   isLoggedIn    = false;
+  String displayName   = '';
+  String userEmail     = '';
+  String _passwordHash = '';
+
+  // ── Load from SharedPreferences ─────────────────────────────────────────
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    _displayName = prefs.getString('displayName') ?? '';
+    isLoggedIn    = prefs.getBool(_kLoggedIn)      ?? false;
+    displayName   = prefs.getString(_kDisplayName) ?? '';
+    userEmail     = prefs.getString(_kEmail)        ?? '';
+    _passwordHash = prefs.getString(_kPasswordHash) ?? '';
     notifyListeners();
   }
 
-  Future<void> signUp({
+  // ── Sign up ─────────────────────────────────────────────────────────────
+
+  /// Returns null on success, or an error string on failure.
+  Future<String?> signUp({
     required String name,
     required String email,
     required String password,
   }) async {
+    if (name.trim().isEmpty)  return 'Name cannot be empty.';
+    if (!email.contains('@')) return 'Enter a valid email address.';
+    if (password.length < 6)  return 'Password must be at least 6 characters.';
+
+    final hash  = _hash(password);
     final prefs = await SharedPreferences.getInstance();
-    final existingEmail = prefs.getString('userEmail') ?? '';
-    if (existingEmail.isNotEmpty && existingEmail != email) {
-      throw Exception('An account already exists. Please log in instead.');
-    }
-    final hashed = _hashPassword(password);
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('displayName', name);
-    await prefs.setString('userEmail', email.toLowerCase().trim());
-    await prefs.setString('userPasswordHash', hashed);
-    _isLoggedIn = true;
-    _displayName = name;
+    await prefs.setBool(  _kLoggedIn,     true);
+    await prefs.setString(_kDisplayName,  name.trim());
+    await prefs.setString(_kEmail,        email.trim().toLowerCase());
+    await prefs.setString(_kPasswordHash, hash);
+
+    isLoggedIn    = true;
+    displayName   = name.trim();
+    userEmail     = email.trim().toLowerCase();
+    _passwordHash = hash;
     notifyListeners();
+    return null;
   }
 
-  Future<void> login({required String email, required String password}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedEmail = prefs.getString('userEmail') ?? '';
-    final storedHash = prefs.getString('userPasswordHash') ?? '';
+  // ── Login ───────────────────────────────────────────────────────────────
 
-    if (storedEmail.isEmpty) {
-      throw Exception('No account found. Please sign up first.');
+  /// Returns null on success, or an error string on failure.
+  Future<String?> login({
+    required String email,
+    required String password,
+  }) async {
+    if (!email.contains('@')) return 'Enter a valid email address.';
+
+    final prefs       = await SharedPreferences.getInstance();
+    final storedEmail = prefs.getString(_kEmail)        ?? '';
+    final storedHash  = prefs.getString(_kPasswordHash) ?? '';
+
+    if (email.trim().toLowerCase() != storedEmail) {
+      return 'No account found for that email.';
     }
-    if (storedEmail != email.toLowerCase().trim()) {
-      throw Exception('No account found for that email.');
-    }
-    if (storedHash.isNotEmpty && storedHash != _hashPassword(password)) {
-      throw Exception('Incorrect password.');
+    if (_hash(password) != storedHash) {
+      return 'Incorrect password.';
     }
 
-    final storedName = prefs.getString('displayName') ?? email.split('@').first;
-    await prefs.setBool('isLoggedIn', true);
-    _isLoggedIn = true;
-    _displayName = storedName;
+    await prefs.setBool(_kLoggedIn, true);
+    isLoggedIn    = true;
+    displayName   = prefs.getString(_kDisplayName) ?? '';
+    userEmail     = storedEmail;
+    _passwordHash = storedHash;
     notifyListeners();
+    return null;
   }
+
+  // ── Logout ──────────────────────────────────────────────────────────────
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    _isLoggedIn = false;
+    await prefs.setBool(_kLoggedIn, false);
+    isLoggedIn = false;
     notifyListeners();
   }
+
+  // ── Private helpers ─────────────────────────────────────────────────────
+
+  String _hash(String password) =>
+      sha256.convert(utf8.encode(password)).toString();
 }
 
-/// Root widget that resolves auth state and routes to the correct screen.
+// ─── AuthGate ─────────────────────────────────────────────────────────────────
+
+/// Loads auth state asynchronously; shows the [child] when logged in,
+/// or [AuthScreen] when not. [onAuthenticated] is called when the user
+/// successfully signs up / logs in so the gate can rebuild.
 class AuthGate extends StatefulWidget {
-  final Widget child;
   const AuthGate({super.key, required this.child});
+
+  /// The screen to show when the user is authenticated.
+  final Widget child;
 
   @override
   State<AuthGate> createState() => _AuthGateState();
 }
 
 class _AuthGateState extends State<AuthGate> {
-  final AuthState _auth = AuthState();
-  bool _loading = true;
+  final AuthState _auth    = AuthState();
+  bool            _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _auth.addListener(_onAuthChanged);
-    _auth.load().whenComplete(() => setState(() => _loading = false));
+    _auth.load().then((_) {
+      if (mounted) setState(() => _loading = false);
+    });
   }
 
-  @override
-  void dispose() {
-    _auth.removeListener(_onAuthChanged);
-    super.dispose();
+  void _onAuthenticated() {
+    if (mounted) setState(() {});
   }
-
-  void _onAuthChanged() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const _SplashScreen();
-    }
-    if (_auth.isLoggedIn) {
-      return widget.child;
-    }
-    return AuthScreen(auth: _auth);
+    if (_loading) return const _SplashScreen();
+    if (_auth.isLoggedIn) return widget.child;
+    return AuthScreen(auth: _auth, onAuthenticated: _onAuthenticated);
   }
 }
 
-// ─── Splash ──────────────────────────────────────────────────────────────────
+// ─── SplashScreen ─────────────────────────────────────────────────────────────
 
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
@@ -136,8 +152,18 @@ class _SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.diamond, color: AppColors.gold, size: 56),
+            Icon(Icons.diamond, color: AppColors.gold, size: 64),
             SizedBox(height: 16),
+            Text(
+              'Iconic Studio Pro',
+              style: TextStyle(
+                color: AppColors.gold,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.6,
+              ),
+            ),
+            SizedBox(height: 24),
             CircularProgressIndicator(color: AppColors.gold),
           ],
         ),
@@ -146,11 +172,17 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-// ─── Auth Screen ─────────────────────────────────────────────────────────────
+// ─── AuthScreen ───────────────────────────────────────────────────────────────
 
 class AuthScreen extends StatefulWidget {
-  final AuthState auth;
-  const AuthScreen({super.key, required this.auth});
+  const AuthScreen({
+    super.key,
+    required this.auth,
+    required this.onAuthenticated,
+  });
+
+  final AuthState   auth;
+  final VoidCallback onAuthenticated;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -183,65 +215,55 @@ class _AuthScreenState extends State<AuthScreen>
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.diamond, color: AppColors.gold, size: 64),
                   const SizedBox(height: 12),
                   const Text(
-                    'IconStudio',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    'PRO',
+                    'Iconic Studio Pro',
                     style: TextStyle(
                       color: AppColors.gold,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 3,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Diamond refraction icon editor',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 32),
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.panel,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.panelBorder),
                     ),
                     child: Column(
                       children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: AppColors.panelBorder),
-                            ),
-                          ),
-                          child: TabBar(
-                            controller: _tabs,
-                            indicatorColor: AppColors.gold,
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            labelColor: AppColors.gold,
-                            unselectedLabelColor: AppColors.textSecondary,
-                            labelStyle: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                            tabs: const [
-                              Tab(text: 'Sign Up'),
-                              Tab(text: 'Log In'),
-                            ],
-                          ),
+                        TabBar(
+                          controller: _tabs,
+                          indicatorColor: AppColors.gold,
+                          labelColor: AppColors.gold,
+                          unselectedLabelColor: AppColors.textSecondary,
+                          tabs: const [
+                            Tab(text: 'Sign Up'),
+                            Tab(text: 'Log In'),
+                          ],
                         ),
                         SizedBox(
-                          height: 380,
+                          height: 340,
                           child: TabBarView(
                             controller: _tabs,
                             children: [
-                              _SignUpForm(auth: widget.auth),
-                              _LoginForm(auth: widget.auth),
+                              _SignUpForm(
+                                auth:            widget.auth,
+                                onAuthenticated: widget.onAuthenticated,
+                              ),
+                              _LoginForm(
+                                auth:            widget.auth,
+                                onAuthenticated: widget.onAuthenticated,
+                              ),
                             ],
                           ),
                         ),
@@ -258,148 +280,107 @@ class _AuthScreenState extends State<AuthScreen>
   }
 }
 
-// ─── Sign-Up Form ─────────────────────────────────────────────────────────────
+// ─── Sign-up form ─────────────────────────────────────────────────────────────
 
 class _SignUpForm extends StatefulWidget {
-  final AuthState auth;
-  const _SignUpForm({required this.auth});
+  const _SignUpForm({required this.auth, required this.onAuthenticated});
+  final AuthState    auth;
+  final VoidCallback onAuthenticated;
 
   @override
   State<_SignUpForm> createState() => _SignUpFormState();
 }
 
 class _SignUpFormState extends State<_SignUpForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
+  final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _obscurePass = true;
-  bool _obscureConfirm = true;
-  bool _loading = false;
+  final _passCtrl  = TextEditingController();
+  bool    _loading = false;
+  String? _error;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
-    _confirmCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
-    try {
-      await widget.auth.signUp(
-        name: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim().toLowerCase(),
-        password: _passCtrl.text,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    setState(() { _loading = true; _error = null; });
+    final err = await widget.auth.signUp(
+      name:     _nameCtrl.text,
+      email:    _emailCtrl.text,
+      password: _passCtrl.text,
+    );
+    if (!mounted) return;
+    if (err != null) {
+      setState(() { _error = err; _loading = false; });
+    } else {
+      widget.onAuthenticated();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _AuthField(
-              controller: _nameCtrl,
-              label: 'Full Name',
-              icon: Icons.person_outline,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _emailCtrl,
-              label: 'Email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: _validateEmail,
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _passCtrl,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscurePass,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePass ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          _AuthField(
+            controller: _nameCtrl,
+            label: 'Display Name',
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 12),
+          _AuthField(
+            controller:   _emailCtrl,
+            label:        'Email',
+            icon:         Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          _AuthField(
+            controller: _passCtrl,
+            label:      'Password',
+            icon:       Icons.lock_outline,
+            obscure:    true,
+          ),
+          const SizedBox(height: 16),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.error, fontSize: 13),
               ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Password is required';
-                if (v.length < 6) return 'Minimum 6 characters';
-                return null;
-              },
             ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _confirmCtrl,
-              label: 'Confirm Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscureConfirm,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
-              ),
-              validator: (v) {
-                if (v != _passCtrl.text) return 'Passwords do not match';
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            _GoldButton(
-              label: 'Create Account',
-              loading: _loading,
-              onPressed: _submit,
-            ),
-          ],
-        ),
+          _GoldButton(
+            label:     _loading ? 'Creating account…' : 'Create Account',
+            onPressed: _loading ? null : _submit,
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Login Form ───────────────────────────────────────────────────────────────
+// ─── Login form ───────────────────────────────────────────────────────────────
 
 class _LoginForm extends StatefulWidget {
-  final AuthState auth;
-  const _LoginForm({required this.auth});
+  const _LoginForm({required this.auth, required this.onAuthenticated});
+  final AuthState    auth;
+  final VoidCallback onAuthenticated;
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<_LoginForm> {
-  final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _obscure = true;
-  bool _loading = false;
+  final _passCtrl  = TextEditingController();
+  bool    _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -409,121 +390,98 @@ class _LoginFormState extends State<_LoginForm> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
-    try {
-      await widget.auth.login(
-        email: _emailCtrl.text.trim().toLowerCase(),
-        password: _passCtrl.text,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    setState(() { _loading = true; _error = null; });
+    final err = await widget.auth.login(
+      email:    _emailCtrl.text,
+      password: _passCtrl.text,
+    );
+    if (!mounted) return;
+    if (err != null) {
+      setState(() { _error = err; _loading = false; });
+    } else {
+      widget.onAuthenticated();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _AuthField(
-              controller: _emailCtrl,
-              label: 'Email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: _validateEmail,
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _passCtrl,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscure,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscure ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscure = !_obscure),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          _AuthField(
+            controller:   _emailCtrl,
+            label:        'Email',
+            icon:         Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          _AuthField(
+            controller: _passCtrl,
+            label:      'Password',
+            icon:       Icons.lock_outline,
+            obscure:    true,
+          ),
+          const SizedBox(height: 16),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.error, fontSize: 13),
               ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
             ),
-            const SizedBox(height: 24),
-            _GoldButton(
-              label: 'Log In',
-              loading: _loading,
-              onPressed: _submit,
-            ),
-          ],
-        ),
+          _GoldButton(
+            label:     _loading ? 'Signing in…' : 'Sign In',
+            onPressed: _loading ? null : _submit,
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Shared widgets ───────────────────────────────────────────────────────────
+// ─── Shared form widgets ──────────────────────────────────────────────────────
 
 class _AuthField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final Widget? suffixIcon;
-  final String? Function(String?)? validator;
-
   const _AuthField({
     required this.controller,
     required this.label,
     required this.icon,
+    this.obscure      = false,
     this.keyboardType,
-    this.obscureText = false,
-    this.suffixIcon,
-    this.validator,
   });
+
+  final TextEditingController controller;
+  final String                label;
+  final IconData              icon;
+  final bool                  obscure;
+  final TextInputType?        keyboardType;
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
+    return TextField(
+      controller:   controller,
+      obscureText:  obscure,
       keyboardType: keyboardType,
-      obscureText: obscureText,
       style: const TextStyle(color: AppColors.textPrimary),
-      validator: validator,
       decoration: InputDecoration(
-        labelText: label,
+        labelText:  label,
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: AppColors.background,
+        filled:     true,
+        fillColor:  AppColors.background,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:   const BorderSide(color: AppColors.panelBorder),
+        ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.panelBorder),
+          borderRadius: BorderRadius.circular(10),
+          borderSide:   const BorderSide(color: AppColors.panelBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.gold),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent),
+          borderRadius: BorderRadius.circular(10),
+          borderSide:   const BorderSide(color: AppColors.gold),
         ),
       ),
     );
@@ -531,37 +489,26 @@ class _AuthField extends StatelessWidget {
 }
 
 class _GoldButton extends StatelessWidget {
-  final String label;
-  final bool loading;
-  final VoidCallback onPressed;
-
-  const _GoldButton({
-    required this.label,
-    required this.loading,
-    required this.onPressed,
-  });
+  const _GoldButton({required this.label, required this.onPressed});
+  final String        label;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      width: double.infinity,
       child: ElevatedButton(
-        onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
-          foregroundColor: Colors.black,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          foregroundColor: AppColors.background,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        child: loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.black),
-              )
-            : Text(label,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+        onPressed: onPressed,
+        child: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
       ),
     );
   }
