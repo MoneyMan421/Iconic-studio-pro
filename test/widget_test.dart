@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iconic_studio_pro/app_colors.dart';
 import 'package:iconic_studio_pro/main.dart';
 
 void main() {
