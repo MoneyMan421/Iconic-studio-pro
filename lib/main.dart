@@ -681,7 +681,10 @@ class PaywallModal extends StatefulWidget {
 }
 
 class _PaywallModalState extends State<PaywallModal> {
-  String _selectedTier = 'Pro Lifetime';
+  static const String _kProLifetime = 'Pro Lifetime';
+  static const String _kProMonthly = 'Pro Monthly';
+
+  String _selectedTier = _kProLifetime;
 
   @override
   Widget build(BuildContext context) {
@@ -711,9 +714,9 @@ class _PaywallModalState extends State<PaywallModal> {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.',
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier(_kProMonthly, '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
             const SizedBox(height: 12),
-            _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
+            _buildTier(_kProLifetime, '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -734,6 +737,12 @@ class _PaywallModalState extends State<PaywallModal> {
     );
   }
 
+  Color _borderColor(bool isSelected, bool isPopular) {
+    if (isSelected) return AppColors.gold;
+    if (isPopular) return AppColors.gold.withValues(alpha: 0.4);
+    return AppColors.panelBorder;
+  }
+
   Widget _buildTier(String name, String price, List<String> features, {bool isPopular = false}) {
     final isSelected = _selectedTier == name;
     return GestureDetector(
@@ -744,7 +753,7 @@ class _PaywallModalState extends State<PaywallModal> {
           color: isSelected ? AppColors.gold.withValues(alpha: 0.15) : AppColors.uploadZone,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.gold : (isPopular ? AppColors.gold.withValues(alpha: 0.4) : AppColors.panelBorder),
+            color: _borderColor(isSelected, isPopular),
             width: isSelected ? 2 : 1,
           ),
         ),
