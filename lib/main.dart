@@ -113,8 +113,10 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
-    editorState = widget.initialState ?? EditorState();
-    if (!widget.embeddedMode) {
+    if (widget.embeddedMode) {
+      editorState = widget.initialState ?? EditorState();
+    } else {
+      editorState = EditorState();
       _loadState();
     }
   }
