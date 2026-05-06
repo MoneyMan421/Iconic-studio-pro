@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'editor_storage.dart';
@@ -89,7 +88,16 @@ class IconStudioPro extends StatelessWidget {
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  const StudioPage({
+    super.key,
+    this.embeddedMode = false,
+    this.initialState,
+    this.onStateChanged,
+  });
+
+  final bool embeddedMode;
+  final EditorState? initialState;
+  final void Function(EditorState)? onStateChanged;
 
   @override
   State<StudioPage> createState() => _StudioPageState();
@@ -105,7 +113,13 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
-    _loadState();
+    if (widget.embeddedMode) {
+      if (widget.initialState != null) {
+        editorState = widget.initialState!;
+      }
+    } else {
+      _loadState();
+    }
   }
 
   /// Restores previously saved editor settings from persistent storage.
@@ -144,10 +158,14 @@ class _StudioPageState extends State<StudioPage> {
     );
   }
 
-  /// Updates [editorState] and immediately persists the new value.
+  /// Updates [editorState] and persists or notifies parent depending on mode.
   void _setEditorState(EditorState s) {
     setState(() => editorState = s);
-    _saveState();
+    if (widget.embeddedMode) {
+      widget.onStateChanged?.call(s);
+    } else {
+      _saveState();
+    }
   }
 
   Future<void> _pickImage() async {

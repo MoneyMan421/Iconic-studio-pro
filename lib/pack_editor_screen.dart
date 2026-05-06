@@ -412,7 +412,6 @@ class _IconEditorSheetState extends State<IconEditorSheet> {
   late EditorState editorState;
   final _nameCtrl = TextEditingController();
   bool _saving = false;
-  final GlobalKey _previewKey = GlobalKey();
 
   @override
   void initState() {
@@ -467,11 +466,11 @@ class _IconEditorSheetState extends State<IconEditorSheet> {
 
       if (widget.iconId != null) {
         // Update existing
-        await FirebaseService._packs
-            .doc(widget.packId)
-            .collection('icons')
-            .doc(widget.iconId)
-            .update({'name': _nameCtrl.text.trim(), 'editorSettings': settings});
+        await FirebaseService.updateIcon(
+          widget.packId,
+          widget.iconId!,
+          {'name': _nameCtrl.text.trim(), 'editorSettings': settings},
+        );
       } else {
         // Add new
         await FirebaseService.addIconToPack(
