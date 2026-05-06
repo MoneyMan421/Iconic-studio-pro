@@ -98,6 +98,7 @@ class StudioPage extends StatefulWidget {
 class _StudioPageState extends State<StudioPage> {
   EditorState editorState = EditorState();
   int importsUsed = 0;
+  bool isPro = false;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
@@ -125,6 +126,7 @@ class _StudioPageState extends State<StudioPage> {
         facetDepth: saved.facetDepth,
       );
       importsUsed = saved.importsUsed;
+      isPro = saved.isPro;
     });
   }
 
@@ -141,6 +143,7 @@ class _StudioPageState extends State<StudioPage> {
       sparkleIntensity: editorState.sparkleIntensity,
       facetDepth: editorState.facetDepth,
       importsUsed: importsUsed,
+      isPro: isPro,
     );
   }
 
@@ -151,7 +154,7 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   Future<void> _pickImage() async {
-    if (importsUsed >= freeImportLimit) {
+    if (!isPro && importsUsed >= freeImportLimit) {
       _showPaywall();
       return;
     }
@@ -177,15 +180,18 @@ class _StudioPageState extends State<StudioPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => PaywallModal(
-        onUpgrade: () {
+        onUpgrade: (String tier) {
           Navigator.pop(context);
+          setState(() => isPro = true);
+          _saveState();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
-              backgroundColor: Color(0xFFD4AF37),
+            SnackBar(
+              content: Text('Welcome to $tier! You now have unlimited imports.'),
+              backgroundColor: const Color(0xFFD4AF37),
             ),
           );
         },
+        onDismiss: () => Navigator.pop(context),
       ),
     );
   }
@@ -665,9 +671,17 @@ class _PreviewCanvasState extends State<PreviewCanvas>
   }
 }
 
-class PaywallModal extends StatelessWidget {
-  final VoidCallback onUpgrade;
-  const PaywallModal({super.key, required this.onUpgrade});
+class PaywallModal extends StatefulWidget {
+  final void Function(String tier) onUpgrade;
+  final VoidCallback onDismiss;
+  const PaywallModal({super.key, required this.onUpgrade, required this.onDismiss});
+
+  @override
+  State<PaywallModal> createState() => _PaywallModalState();
+}
+
+class _PaywallModalState extends State<PaywallModal> {
+  String _selectedTier = 'Pro Lifetime';
 
   @override
   Widget build(BuildContext context) {
@@ -680,11 +694,21 @@ class PaywallModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.diamond, color: AppColors.gold, size: 48),
+            Row(
+              children: [
+                const Spacer(),
+                const Icon(Icons.diamond, color: AppColors.gold, size: 48),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  onPressed: widget.onDismiss,
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             const Text('Unlock Pro', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
-            const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
+            const Text('You\'ve used your 2 free imports. Upgrade to continue.',
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
             _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
@@ -695,13 +719,13 @@ class PaywallModal extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: onUpgrade,
+                onPressed: () => widget.onUpgrade(_selectedTier),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Upgrade Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text('Upgrade to $_selectedTier', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
           ],
@@ -711,41 +735,56 @@ class PaywallModal extends StatelessWidget {
   }
 
   Widget _buildTier(String name, String price, List<String> features, {bool isPopular = false}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(name, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-              if (isPopular) Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(4)),
-                child: const Text('POPULAR', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
+    final isSelected = _selectedTier == name;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTier = name),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gold.withValues(alpha: 0.15) : AppColors.uploadZone,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.gold : (isPopular ? AppColors.gold.withValues(alpha: 0.4) : AppColors.panelBorder),
+            width: isSelected ? 2 : 1,
           ),
-          const SizedBox(height: 4),
-          Text(price, style: const TextStyle(color: AppColors.gold, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          ...features.map((f) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.check, color: AppColors.gold, size: 14),
-                const SizedBox(width: 8),
-                Text(f, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(name, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    if (isPopular) Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(4)),
+                      child: const Text('POPULAR', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.check_circle, color: AppColors.gold, size: 18),
+                    ],
+                  ],
+                ),
               ],
             ),
-          )),
-        ],
+            const SizedBox(height: 4),
+            Text(price, style: const TextStyle(color: AppColors.gold, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...features.map((f) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check, color: AppColors.gold, size: 14),
+                  const SizedBox(width: 8),
+                  Text(f, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            )),
+          ],
+        ),
       ),
     );
   }

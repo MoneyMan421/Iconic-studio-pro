@@ -18,6 +18,7 @@ class EditorStorage {
   static const _kSparkleIntensity = 'es_sparkleIntensity';
   static const _kFacetDepth = 'es_facetDepth';
   static const _kImportsUsed = 'es_importsUsed';
+  static const _kIsPro = 'es_isPro';
 
   // ── public API ───────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ class EditorStorage {
     required double sparkleIntensity,
     required double facetDepth,
     required int importsUsed,
+    required bool isPro,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await Future.wait([
@@ -46,6 +48,7 @@ class EditorStorage {
       prefs.setDouble(_kSparkleIntensity, sparkleIntensity),
       prefs.setDouble(_kFacetDepth, facetDepth),
       prefs.setInt(_kImportsUsed, importsUsed),
+      prefs.setBool(_kIsPro, isPro),
     ]);
   }
 
@@ -64,6 +67,7 @@ class EditorStorage {
       sparkleIntensity: prefs.getDouble(_kSparkleIntensity) ?? 0.8,
       facetDepth: prefs.getDouble(_kFacetDepth) ?? 0.6,
       importsUsed: prefs.getInt(_kImportsUsed) ?? 0,
+      isPro: prefs.getBool(_kIsPro) ?? false,
     );
   }
 }
@@ -81,6 +85,7 @@ class SavedEditorData {
     required this.sparkleIntensity,
     required this.facetDepth,
     required this.importsUsed,
+    required this.isPro,
   });
 
   final double scale;
@@ -93,4 +98,5 @@ class SavedEditorData {
   final double sparkleIntensity;
   final double facetDepth;
   final int importsUsed;
+  final bool isPro;
 }
