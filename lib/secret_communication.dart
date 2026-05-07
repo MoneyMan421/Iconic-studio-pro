@@ -28,7 +28,7 @@ SecretCommunicationResult buildSecretCommunication(String input) {
     codebook[unique[i]] = _tokenForIndex(i);
   }
 
-  final shorthand = unique.map((emoji) => codebook[emoji]!).join(' ');
+  final shorthand = unique.map((emoji) => codebook[emoji]).whereType<String>().join(' ');
   return SecretCommunicationResult(
     uniqueEmojiSequence: unique.join(),
     shorthandMessage: shorthand,
@@ -53,6 +53,8 @@ bool _isLikelyEmojiRune(int rune) {
       (rune >= 0x1F1E6 && rune <= 0x1F1FF);
 }
 
+/// Generates compact pronounceable tokens (`ka`, `zu`, `mi`, etc.) and
+/// appends a round suffix (`ka2`, `zu2`, ...) when the base list is exhausted.
 String _tokenForIndex(int index) {
   const syllables = [
     'ka',

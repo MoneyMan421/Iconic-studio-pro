@@ -110,9 +110,6 @@ class _StudioPageState extends State<StudioPage> {
   void initState() {
     super.initState();
     _loadState();
-    final result = buildSecretCommunication(_secretInputController.text);
-    _uniqueEmojiSequence = result.uniqueEmojiSequence;
-    _secretShorthand = result.shorthandMessage;
   }
 
   @override
@@ -370,25 +367,28 @@ class _StudioPageState extends State<StudioPage> {
         _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
         const SizedBox(height: 32),
         _buildSection('EMOJI CODE'),
-        TextField(
-          controller: _secretInputController,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Type emoji message',
-            hintStyle: const TextStyle(color: AppColors.textSecondary),
-            filled: true,
-            fillColor: AppColors.uploadZone,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.panelBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.panelBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.gold),
+        Semantics(
+          label: 'Emoji message input',
+          child: TextField(
+            controller: _secretInputController,
+            style: const TextStyle(color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Type emoji message',
+              hintStyle: const TextStyle(color: AppColors.textSecondary),
+              filled: true,
+              fillColor: AppColors.uploadZone,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.panelBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.panelBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.gold),
+              ),
             ),
           ),
         ),
