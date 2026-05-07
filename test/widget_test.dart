@@ -5,6 +5,7 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iconic_studio_pro/main.dart';
+import 'package:iconic_studio_pro/secret_communication.dart';
 
 void main() {
   group('App launch smoke', () {
@@ -89,6 +90,24 @@ void main() {
     test('no SharedPreferences key is currently defined in main app source', () {
       final source = File('lib/main.dart').readAsStringSync();
       expect(source.contains('SharedPreferences'), isFalse);
+    });
+  });
+
+  group('Secret communication', () {
+    test('removes duplicate emojis while preserving first appearance order', () {
+      const input = '😂😞🙁🙂👀😋🙁😋🙁😔👀😞🙂👀👀😔👀😔🙂😳🙂😂😁😜😔👀😞😞';
+      final result = buildSecretCommunication(input);
+
+      expect(result.uniqueEmojiSequence, '😂😞🙁🙂👀😋😔😳😁😜');
+    });
+
+    test('builds one shorthand token per unique emoji', () {
+      const input = '😂😞🙁🙂👀😋🙁😋🙁';
+      final result = buildSecretCommunication(input);
+
+      expect(result.codebook.length, 6);
+      expect(result.shorthandMessage.split(' ').length, 6);
+      expect(result.shorthandMessage, isNotEmpty);
     });
   });
 }

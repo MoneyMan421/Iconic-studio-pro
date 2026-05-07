@@ -12,6 +12,7 @@ import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'editor_storage.dart';
 import 'export_helper.dart';
+import 'secret_communication.dart';
 
 class EditorState {
   final double scale;
@@ -101,11 +102,25 @@ class _StudioPageState extends State<StudioPage> {
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
+  final TextEditingController _secretInputController = TextEditingController(
+    text: '😂😞🙁🙂👀😋🙁😋🙁😔👀😞🙂👀👀😔👀😔🙂😳🙂😂😁😜😔👀😞😞',
+  );
+  String _uniqueEmojiSequence = '';
+  String _secretShorthand = '';
 
   @override
   void initState() {
     super.initState();
     _loadState();
+    final result = buildSecretCommunication(_secretInputController.text);
+    _uniqueEmojiSequence = result.uniqueEmojiSequence;
+    _secretShorthand = result.shorthandMessage;
+  }
+
+  @override
+  void dispose() {
+    _secretInputController.dispose();
+    super.dispose();
   }
 
   /// Restores previously saved editor settings from persistent storage.
@@ -239,6 +254,14 @@ class _StudioPageState extends State<StudioPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _updateSecretCommunication() {
+    final result = buildSecretCommunication(_secretInputController.text);
+    setState(() {
+      _uniqueEmojiSequence = result.uniqueEmojiSequence;
+      _secretShorthand = result.shorthandMessage;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -347,7 +370,85 @@ class _StudioPageState extends State<StudioPage> {
         _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => _setEditorState(editorState.copyWith(refractionIndex: v)), decimals: 2),
         _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => _setEditorState(editorState.copyWith(sparkleIntensity: v))),
         _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
+        const SizedBox(height: 32),
+        _buildSection('SECRET COMMUNICATION'),
+        TextField(
+          controller: _secretInputController,
+          onChanged: (_) => _updateSecretCommunication(),
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Type emoji message',
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
+            filled: true,
+            fillColor: AppColors.uploadZone,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.panelBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.panelBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.gold),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _updateSecretCommunication,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Build Secret Code'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildSecretOutput('Unique Emojis', _uniqueEmojiSequence),
+        const SizedBox(height: 8),
+        _buildSecretOutput('Secret Shorthand', _secretShorthand),
       ],
+    );
+  }
+
+  Widget _buildSecretOutput(String label, String value) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.uploadZone,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.panelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            value.isEmpty ? '-' : value,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -750,4 +851,3 @@ class PaywallModal extends StatelessWidget {
     );
   }
 }
-
