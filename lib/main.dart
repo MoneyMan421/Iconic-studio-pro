@@ -102,9 +102,7 @@ class _StudioPageState extends State<StudioPage> {
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
-  final TextEditingController _secretInputController = TextEditingController(
-    text: '😂😞🙁🙂👀😋🙁😋🙁😔👀😞🙂👀👀😔👀😔🙂😳🙂😂😁😜😔👀😞😞',
-  );
+  final TextEditingController _secretInputController = TextEditingController();
   String _uniqueEmojiSequence = '';
   String _secretShorthand = '';
 
@@ -371,10 +369,9 @@ class _StudioPageState extends State<StudioPage> {
         _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => _setEditorState(editorState.copyWith(sparkleIntensity: v))),
         _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
         const SizedBox(height: 32),
-        _buildSection('SECRET COMMUNICATION'),
+        _buildSection('EMOJI CODE'),
         TextField(
           controller: _secretInputController,
-          onChanged: (_) => _updateSecretCommunication(),
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: 'Type emoji message',

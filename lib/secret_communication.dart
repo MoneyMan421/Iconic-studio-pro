@@ -1,3 +1,5 @@
+import 'package:characters/characters.dart';
+
 class SecretCommunicationResult {
   final String uniqueEmojiSequence;
   final String shorthandMessage;
@@ -36,9 +38,10 @@ SecretCommunicationResult buildSecretCommunication(String input) {
 
 List<String> _extractEmojiCharacters(String input) {
   final result = <String>[];
-  for (final rune in input.runes) {
-    if (_isLikelyEmojiRune(rune)) {
-      result.add(String.fromCharCode(rune));
+  for (final cluster in input.characters) {
+    final hasEmojiRune = cluster.runes.any(_isLikelyEmojiRune);
+    if (hasEmojiRune) {
+      result.add(cluster);
     }
   }
   return result;
