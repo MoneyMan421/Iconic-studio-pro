@@ -56,6 +56,34 @@ void main() {
     });
   });
 
+  group('Paywall pricing tiers', () {
+    testWidgets('includes yearly tier and upgrades selected plan', (tester) async {
+      ProPriceTier? selected;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PaywallModal(
+              onUpgrade: (tier) => selected = tier,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Pro Yearly'), findsOneWidget);
+      expect(find.text('Upgrade to Pro Yearly'), findsOneWidget);
+
+      await tester.tap(find.text('Pro Lifetime'));
+      await tester.pump();
+      expect(find.text('Upgrade to Pro Lifetime'), findsOneWidget);
+
+      await tester.tap(find.text('Upgrade to Pro Lifetime'));
+      await tester.pump();
+      expect(selected, ProPriceTier.lifetime);
+    });
+  });
+
   group('ShaderBuilder widget mounting', () {
     testWidgets('ShaderBuilder can be mounted in widget tree', (tester) async {
       await tester.pumpWidget(

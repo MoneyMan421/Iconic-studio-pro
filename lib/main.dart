@@ -177,12 +177,14 @@ class _StudioPageState extends State<StudioPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => PaywallModal(
-        onUpgrade: () {
+        onUpgrade: (selectedTier) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
-              backgroundColor: Color(0xFFD4AF37),
+            SnackBar(
+              content: Text(
+                '${selectedTier.title} upgrade coming soon! Thank you for your interest.',
+              ),
+              backgroundColor: AppColors.gold,
             ),
           );
         },
@@ -665,9 +667,31 @@ class _PreviewCanvasState extends State<PreviewCanvas>
   }
 }
 
-class PaywallModal extends StatelessWidget {
-  final VoidCallback onUpgrade;
+enum ProPriceTier { monthly, yearly, lifetime }
+
+extension ProPriceTierLabel on ProPriceTier {
+  String get title {
+    switch (this) {
+      case ProPriceTier.monthly:
+        return 'Pro Monthly';
+      case ProPriceTier.yearly:
+        return 'Pro Yearly';
+      case ProPriceTier.lifetime:
+        return 'Pro Lifetime';
+    }
+  }
+}
+
+class PaywallModal extends StatefulWidget {
+  final ValueChanged<ProPriceTier> onUpgrade;
   const PaywallModal({super.key, required this.onUpgrade});
+
+  @override
+  State<PaywallModal> createState() => _PaywallModalState();
+}
+
+class _PaywallModalState extends State<PaywallModal> {
+  ProPriceTier _selectedTier = ProPriceTier.yearly;
 
   @override
   Widget build(BuildContext context) {
@@ -687,21 +711,39 @@ class PaywallModal extends StatelessWidget {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier(
+              tier: ProPriceTier.monthly,
+              price: '\$4.99/mo',
+              features: ['Unlimited imports', 'All shaders', 'Cloud sync'],
+            ),
             const SizedBox(height: 12),
-            _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
+            _buildTier(
+              tier: ProPriceTier.yearly,
+              price: '\$29.99/yr',
+              features: ['Everything in Monthly', 'Save 50% vs monthly billing'],
+              isPopular: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTier(
+              tier: ProPriceTier.lifetime,
+              price: '\$49.99',
+              features: ['Everything in Pro', 'Pay once, keep forever'],
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: onUpgrade,
+                onPressed: () => widget.onUpgrade(_selectedTier),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Upgrade Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text(
+                  'Upgrade to ${_selectedTier.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -710,44 +752,87 @@ class PaywallModal extends StatelessWidget {
     );
   }
 
-  Widget _buildTier(String name, String price, List<String> features, {bool isPopular = false}) {
+  Widget _buildTier({
+    required ProPriceTier tier,
+    required String price,
+    required List<String> features,
+    bool isPopular = false,
+  }) {
+    final isSelected = _selectedTier == tier;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPopular ? AppColors.gold.withValues(alpha: 0.1) : AppColors.uploadZone,
+        color: (isPopular || isSelected)
+            ? AppColors.gold.withValues(alpha: 0.1)
+            : AppColors.uploadZone,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isPopular ? AppColors.gold : AppColors.panelBorder),
+        border: Border.all(
+          color: (isPopular || isSelected) ? AppColors.gold : AppColors.panelBorder,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(name, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-              if (isPopular) Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(4)),
-                child: const Text('POPULAR', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(price, style: const TextStyle(color: AppColors.gold, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          ...features.map((f) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => setState(() => _selectedTier = tier),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.check, color: AppColors.gold, size: 14),
-                const SizedBox(width: 8),
-                Text(f, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  tier.title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (isPopular)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'POPULAR',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
               ],
             ),
-          )),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              price,
+              style: const TextStyle(
+                color: AppColors.gold,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...features.map((f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check, color: AppColors.gold, size: 14),
+                      const SizedBox(width: 8),
+                      Text(
+                        f,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
       ),
     );
   }
 }
-
