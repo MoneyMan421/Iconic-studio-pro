@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
 import 'editor_storage.dart';
@@ -98,6 +97,8 @@ class StudioPage extends StatefulWidget {
 class _StudioPageState extends State<StudioPage> {
   EditorState editorState = EditorState();
   int importsUsed = 0;
+  bool isProUnlocked = false;
+  double? _fps;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
@@ -105,7 +106,23 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
+    SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
     _loadState();
+  }
+
+  @override
+  void dispose() {
+    SchedulerBinding.instance.removeTimingsCallback(_onFrameTimings);
+    super.dispose();
+  }
+
+  void _onFrameTimings(List<FrameTiming> timings) {
+    if (timings.isEmpty || !mounted) return;
+    final totalMicros = timings.last.totalSpan.inMicroseconds;
+    if (totalMicros <= 0) return;
+    final fps = (1000000 / totalMicros).clamp(1, 240).toDouble();
+    if ((_fps ?? 0).round() == fps.round()) return;
+    setState(() => _fps = fps);
   }
 
   /// Restores previously saved editor settings from persistent storage.
@@ -125,6 +142,7 @@ class _StudioPageState extends State<StudioPage> {
         facetDepth: saved.facetDepth,
       );
       importsUsed = saved.importsUsed;
+      isProUnlocked = saved.isProUnlocked;
     });
   }
 
@@ -141,6 +159,7 @@ class _StudioPageState extends State<StudioPage> {
       sparkleIntensity: editorState.sparkleIntensity,
       facetDepth: editorState.facetDepth,
       importsUsed: importsUsed,
+      isProUnlocked: isProUnlocked,
     );
   }
 
@@ -151,7 +170,7 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   Future<void> _pickImage() async {
-    if (importsUsed >= freeImportLimit) {
+    if (!isProUnlocked && importsUsed >= freeImportLimit) {
       _showPaywall();
       return;
     }
@@ -178,13 +197,10 @@ class _StudioPageState extends State<StudioPage> {
       barrierDismissible: false,
       builder: (_) => PaywallModal(
         onUpgrade: () {
+          setState(() => isProUnlocked = true);
+          _saveState();
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
-              backgroundColor: Color(0xFFD4AF37),
-            ),
-          );
+          _showMessage('Pro unlocked on this device. Unlimited imports enabled.');
         },
       ),
     );
@@ -443,7 +459,13 @@ class _StudioPageState extends State<StudioPage> {
               ),
             ),
           ),
-          if (importsUsed > 0) ...[
+          if (isProUnlocked) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Pro unlocked • unlimited imports',
+              style: TextStyle(color: AppColors.gold, fontSize: 11),
+            ),
+          ] else if (importsUsed > 0) ...[
             const SizedBox(height: 8),
             Text(
               '$importsUsed/$freeImportLimit free imports used',
@@ -456,19 +478,20 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   Widget _buildStatsBar() {
+    final fpsLabel = _fps == null ? '--' : _fps!.toStringAsFixed(0);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.panelBorder)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _StatItem(label: 'Quality', value: 'Ultra HD'),
-          SizedBox(width: 48),
-          _StatItem(label: 'Format', value: 'PNG'),
-          SizedBox(width: 48),
-          _StatItem(label: 'FPS', value: '120'),
+          const _StatItem(label: 'Quality', value: 'Ultra HD'),
+          const SizedBox(width: 48),
+          const _StatItem(label: 'Format', value: 'PNG'),
+          const SizedBox(width: 48),
+          _StatItem(label: 'FPS', value: fpsLabel),
         ],
       ),
     );
@@ -687,7 +710,7 @@ class PaywallModal extends StatelessWidget {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Priority support']),
             const SizedBox(height: 12),
             _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
@@ -750,4 +773,3 @@ class PaywallModal extends StatelessWidget {
     );
   }
 }
-

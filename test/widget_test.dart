@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
@@ -86,8 +87,12 @@ void main() {
   });
 
   group('SharedPreferences path key', () {
-    test('no SharedPreferences key is currently defined in main app source', () {
-      final source = File('lib/main.dart').readAsStringSync();
+    test('no SharedPreferences key is currently defined in main app source', () async {
+      final resolved = await Isolate.resolvePackageUri(
+        Uri.parse('package:iconic_studio_pro/main.dart'),
+      );
+      expect(resolved, isNotNull);
+      final source = File.fromUri(resolved!).readAsStringSync();
       expect(source.contains('SharedPreferences'), isFalse);
     });
   });

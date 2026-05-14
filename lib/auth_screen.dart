@@ -39,14 +39,15 @@ class AuthState extends ChangeNotifier {
     required String password,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    final normalizedEmail = email.toLowerCase().trim();
     final existingEmail = prefs.getString('userEmail') ?? '';
-    if (existingEmail.isNotEmpty && existingEmail != email) {
+    if (existingEmail.isNotEmpty && existingEmail != normalizedEmail) {
       throw Exception('An account already exists. Please log in instead.');
     }
     final hashed = _hashPassword(password);
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('displayName', name);
-    await prefs.setString('userEmail', email.toLowerCase().trim());
+    await prefs.setString('userEmail', normalizedEmail);
     await prefs.setString('userPasswordHash', hashed);
     _isLoggedIn = true;
     _displayName = name;
@@ -57,14 +58,18 @@ class AuthState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('userEmail') ?? '';
     final storedHash = prefs.getString('userPasswordHash') ?? '';
+    final normalizedEmail = email.toLowerCase().trim();
 
     if (storedEmail.isEmpty) {
       throw Exception('No account found. Please sign up first.');
     }
-    if (storedEmail != email.toLowerCase().trim()) {
+    if (storedEmail != normalizedEmail) {
       throw Exception('No account found for that email.');
     }
-    if (storedHash.isNotEmpty && storedHash != _hashPassword(password)) {
+    if (storedHash.isEmpty) {
+      throw Exception('Stored account data is incomplete. Please sign up again.');
+    }
+    if (storedHash != _hashPassword(password)) {
       throw Exception('Incorrect password.');
     }
 
