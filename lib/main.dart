@@ -115,7 +115,9 @@ class _StudioPageState extends State<StudioPage> {
   void initState() {
     super.initState();
     if (widget.embeddedMode) {
-      editorState = widget.initialState ?? EditorState();
+      if (widget.initialState != null) {
+        editorState = widget.initialState!;
+      }
       return;
     }
     _loadState();

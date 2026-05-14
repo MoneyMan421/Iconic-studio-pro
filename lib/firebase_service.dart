@@ -153,6 +153,10 @@ class FirebaseService {
         .snapshots();
   }
 
+  /// Updates an existing icon document within a pack and bumps pack freshness.
+  ///
+  /// [packId] is the parent pack document id, [iconId] is the child icon id,
+  /// and [data] contains the fields to update on the icon document.
   static Future<void> updateIcon(
     String packId,
     String iconId,
