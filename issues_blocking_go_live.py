@@ -20,8 +20,8 @@ iconic_studio_pro/                     ← repo root
 │   │     • StudioPage / _StudioPageState (editor screen, import counter)
 │   │     • EditorState (immutable value object, copyWith pattern)
 │   │     • PreviewCanvas (animated GLSL diamond shader preview)
-│   │     • PaywallModal (upgrade dialog – currently non-functional)
-│   │     • _StatItem, _buildStatsBar (hardcoded FPS display)
+│   │     • PaywallModal (upgrade dialog – local Pro unlock)
+│   │     • _StatItem, _buildStatsBar (live FPS display)
 │   ├── auth_screen.dart               ← Auth state & sign-up / sign-in UI
 │   │     • AuthState (ChangeNotifier, SharedPreferences persistence)
 │   │     • AuthGate (routes to AuthScreen or child based on login state)
@@ -30,13 +30,10 @@ iconic_studio_pro/                     ← repo root
 │   ├── app_colors.dart                ← AppColors constants (never use raw Color literals)
 │   ├── export_helper.dart             ← Conditional export: routes to io or web impl
 │   ├── export_io.dart                 ← Native export (Android/iOS: documents dir; desktop: save dialog)
-│   └── export_web.dart                ← Web export (dart:html Blob download)
+│   └── export_web.dart                ← Web export (package:web download helper)
 │
 ├── shaders/
 │   └── diamond_master.frag            ← GLSL fragment shader (diamond refraction effect)
-│
-├── assets/
-│   └── icons/                         ← Bundled icon assets (currently empty – .gitkeep only)
 │
 ├── test/
 │   └── widget_test.dart               ← Widget & unit tests (pumps StudioPage directly)
@@ -47,7 +44,8 @@ iconic_studio_pro/                     ← repo root
 │
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     ← CI: analyze → test → build (Android + iOS + web)
+│       ├── ci.yml                     ← CI: analyze → test → build (Android + iOS + web)
+│       └── codeql.yml                 ← CodeQL: Kotlin/Android code scanning
 │
 ├── pubspec.yaml                       ← Dependencies & asset declarations
 ├── issues_blocking_go_live.py         ← This file – issue tracker
@@ -143,7 +141,7 @@ issues = [
             "`FilePicker.platform.saveFile()` is not supported on Flutter web. "
             "FIXED: export logic is now split. lib/export_io.dart handles Android/iOS/desktop "
             "(documents directory or native save dialog). lib/export_web.dart triggers a browser "
-            "download via dart:html Blob. lib/export_helper.dart selects the correct implementation "
+            "download via browser APIs. lib/export_helper.dart selects the correct implementation "
             "at compile time with a conditional export."
         ),
     },
