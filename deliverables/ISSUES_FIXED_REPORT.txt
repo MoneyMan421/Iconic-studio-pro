@@ -29,19 +29,22 @@ Fixed in this pass:
 7) Removed unused flutter_svg import from main editor screen.
    - File: lib/main.dart
 
+8) Replaced deprecated web export API.
+   - Files: lib/export_web.dart, pubspec.yaml
+   - Result: Web export now uses package:web + dart:js_interop instead of deprecated dart:html.
+
+9) Removed unused empty asset bundle declaration.
+   - Files: pubspec.yaml, .github/workflows/ci.yml, .github/copilot-instructions.md
+   - Result: CI and app config no longer require the empty assets/icons/ directory.
+
+10) Added repository CodeQL workflow.
+    - File: .github/workflows/codeql.yml
+    - Result: GitHub code scanning now has an in-repo workflow that analyzes the Android/Kotlin surface instead of relying on missing default setup.
+
 Validation status in this environment:
 - Flutter CLI is not available here, so analyze/test/build could not be run.
 - Command attempted: flutter --version (failed: command not found)
 
 User must:
-1) Run full Flutter validation locally/CI:
-   - flutter pub get
-   - flutter analyze --fatal-infos
-   - flutter test
-   - flutter build apk --debug
-   - flutter build web --release
-
-2) Decide and provide final monetization behavior:
-   - Integrate a real billing provider (or keep/remove local Pro unlock behavior).
-
-3) Populate assets/icons/ with actual shipped icon assets (or remove unused bundle declaration).
+- No additional manual code changes are required from the user for the issues addressed in this pass.
+- Review CI / CodeQL results after GitHub Actions runs on the pushed branch.

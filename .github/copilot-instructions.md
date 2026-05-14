@@ -30,7 +30,6 @@ using `SharedPreferences` for local persistence — no remote back-end is involv
 | `lib/main.dart` | App entry point, all core UI and editor logic |
 | `lib/auth_screen.dart` | Auth state, sign-up, sign-in, sign-out screens |
 | `shaders/diamond_master.frag` | GLSL diamond-refraction fragment shader |
-| `assets/icons/` | Bundled icon assets (required by `pubspec.yaml`) |
 | `test/widget_test.dart` | Widget and unit tests |
 | `.github/workflows/ci.yml` | CI: analyze → test → build (Android + iOS) |
 | `deliverables/` | Issue tracking documents (not shipped in the app) |

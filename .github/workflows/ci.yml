@@ -16,9 +16,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Validate asset directory
-        run: test -d assets/icons
-
       - name: Install dependencies
         run: flutter pub get
 
