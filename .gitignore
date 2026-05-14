@@ -18,3 +18,7 @@ android/key.properties
 .idea/
 *.iml
 .vscode/
+
+# Python
+__pycache__/
+*.pyc
