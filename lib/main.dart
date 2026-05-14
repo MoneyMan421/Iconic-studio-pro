@@ -183,12 +183,11 @@ class _StudioPageState extends State<StudioPage> {
 
     final bytes = result?.files.single.bytes;
     if (bytes != null) {
+      final nextState = editorState.copyWith(userImageBytes: bytes);
       setState(() {
-        editorState = editorState.copyWith(userImageBytes: bytes);
         importsUsed++;
       });
-      widget.onStateChanged?.call(editorState);
-      _saveState();
+      _setEditorState(nextState);
     }
   }
 
