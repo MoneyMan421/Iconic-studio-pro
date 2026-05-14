@@ -153,6 +153,17 @@ class FirebaseService {
         .snapshots();
   }
 
+  static Future<void> updateIcon(
+    String packId,
+    String iconId,
+    Map<String, dynamic> data,
+  ) async {
+    await _packs.doc(packId).collection('icons').doc(iconId).update(data);
+    await _packs.doc(packId).update({
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   static Future<void> deleteIcon(String packId, String iconId) async {
     await _packs.doc(packId).collection('icons').doc(iconId).delete();
     await _packs.doc(packId).update({
