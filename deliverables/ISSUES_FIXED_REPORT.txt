@@ -1,19 +1,47 @@
 Iconic Studio Pro - Issue Fix Report
-Date: 2026-04-21
+Date: 2026-05-14
 
-Completed:
-1) Created required assets folder from pubspec.yaml:
-   - assets/icons/
+Fixed in this pass:
+1) Paywall upgrade flow now unlocks Pro locally and persists unlock state.
+   - Files: lib/main.dart, lib/editor_storage.dart
+   - Result: Upgrade button no longer acts like a no-op; free import gate can be lifted.
 
-2) Added requested deliverable file:
-   - deliverables/ISSUES_FIXED_REPORT.txt
+2) Import gate now respects persisted Pro state.
+   - Files: lib/main.dart, lib/editor_storage.dart
+   - Result: Unlimited imports are enabled after local Pro unlock.
 
-Validation status:
-- Flutter CLI is not available in this environment, so flutter analyze/test/build could not be executed here.
+3) Auth login hardening.
+   - File: lib/auth_screen.dart
+   - Result: Login now requires a stored password hash and always verifies password.
+
+4) Misleading paywall feature copy removed.
+   - File: lib/main.dart
+   - Result: "Cloud sync" no longer advertised as a shipped feature.
+
+5) Fake hardcoded FPS removed.
+   - File: lib/main.dart
+   - Result: FPS stat now uses live frame timing data.
+
+6) Widget test source-file check made path-safe.
+   - File: test/widget_test.dart
+   - Result: Test resolves lib/main.dart via package URI instead of brittle relative path.
+
+7) Removed unused flutter_svg import from main editor screen.
+   - File: lib/main.dart
+
+Validation status in this environment:
+- Flutter CLI is not available here, so analyze/test/build could not be run.
 - Command attempted: flutter --version (failed: command not found)
 
-Next step for full validation on your machine:
-- flutter pub get
-- flutter analyze
-- flutter test
-- flutter run
+User must:
+1) Run full Flutter validation locally/CI:
+   - flutter pub get
+   - flutter analyze --fatal-infos
+   - flutter test
+   - flutter build apk --debug
+   - flutter build web --release
+
+2) Decide and provide final monetization behavior:
+   - Integrate a real billing provider (or keep/remove local Pro unlock behavior).
+
+3) Populate assets/icons/ with actual shipped icon assets (or remove unused bundle declaration).
