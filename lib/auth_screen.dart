@@ -67,7 +67,7 @@ class AuthState extends ChangeNotifier {
       throw Exception('No account found for that email.');
     }
     if (storedHash.isEmpty) {
-      throw Exception('Stored account data is incomplete. Please sign up again.');
+      throw Exception('Account data is corrupted. Please sign up again.');
     }
     if (storedHash != _hashPassword(password)) {
       throw Exception('Incorrect password.');

@@ -99,9 +99,12 @@ class _StudioPageState extends State<StudioPage> {
   int importsUsed = 0;
   bool isProUnlocked = false;
   double? _fps;
+  DateTime? _lastFpsUpdate;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   static const double maxFpsDisplay = 240;
+  static const Duration fpsUpdateInterval = Duration(milliseconds: 500);
+  static const double minFpsDeltaForRefresh = 5;
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
   @override
@@ -121,9 +124,16 @@ class _StudioPageState extends State<StudioPage> {
     if (timings.isEmpty || !mounted) return;
     final totalMicros = timings.last.totalSpan.inMicroseconds;
     if (totalMicros <= 0) return;
+    final now = DateTime.now();
+    if (_lastFpsUpdate != null && now.difference(_lastFpsUpdate!) < fpsUpdateInterval) {
+      return;
+    }
     final fps = (1000000 / totalMicros).clamp(1, maxFpsDisplay).toDouble();
-    if ((_fps ?? 0).round() == fps.round()) return;
-    setState(() => _fps = fps);
+    if (_fps != null && (_fps! - fps).abs() < minFpsDeltaForRefresh) return;
+    setState(() {
+      _fps = fps;
+      _lastFpsUpdate = now;
+    });
   }
 
   /// Restores previously saved editor settings from persistent storage.
