@@ -89,7 +89,16 @@ class IconStudioPro extends StatelessWidget {
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  final bool embeddedMode;
+  final EditorState? initialState;
+  final ValueChanged<EditorState>? onStateChanged;
+
+  const StudioPage({
+    super.key,
+    this.embeddedMode = false,
+    this.initialState,
+    this.onStateChanged,
+  });
 
   @override
   State<StudioPage> createState() => _StudioPageState();
@@ -105,6 +114,10 @@ class _StudioPageState extends State<StudioPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.embeddedMode) {
+      editorState = widget.initialState ?? EditorState();
+      return;
+    }
     _loadState();
   }
 
@@ -130,6 +143,9 @@ class _StudioPageState extends State<StudioPage> {
 
   /// Persists the current editor settings and import count. Fire-and-forget.
   void _saveState() {
+    if (widget.embeddedMode) {
+      return;
+    }
     EditorStorage.save(
       scale: editorState.scale,
       rotation: editorState.rotation,
@@ -147,6 +163,7 @@ class _StudioPageState extends State<StudioPage> {
   /// Updates [editorState] and immediately persists the new value.
   void _setEditorState(EditorState s) {
     setState(() => editorState = s);
+    widget.onStateChanged?.call(s);
     _saveState();
   }
 
@@ -168,6 +185,7 @@ class _StudioPageState extends State<StudioPage> {
         editorState = editorState.copyWith(userImageBytes: bytes);
         importsUsed++;
       });
+      widget.onStateChanged?.call(editorState);
       _saveState();
     }
   }
@@ -750,4 +768,3 @@ class PaywallModal extends StatelessWidget {
     );
   }
 }
-
