@@ -92,7 +92,9 @@ void main() {
         Uri.parse('package:iconic_studio_pro/main.dart'),
       );
       expect(resolved, isNotNull);
-      final source = File.fromUri(resolved!).readAsStringSync();
+      final resolvedPath = resolved!.toFilePath();
+      expect(resolvedPath, isNotEmpty);
+      final source = File(resolvedPath).readAsStringSync();
       expect(source.contains('SharedPreferences'), isFalse);
     });
   });

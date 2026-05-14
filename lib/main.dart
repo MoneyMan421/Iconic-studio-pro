@@ -101,6 +101,7 @@ class _StudioPageState extends State<StudioPage> {
   double? _fps;
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
+  static const double maxFpsDisplay = 240;
   final GlobalKey _previewBoundaryKey = GlobalKey();
 
   @override
@@ -120,7 +121,7 @@ class _StudioPageState extends State<StudioPage> {
     if (timings.isEmpty || !mounted) return;
     final totalMicros = timings.last.totalSpan.inMicroseconds;
     if (totalMicros <= 0) return;
-    final fps = (1000000 / totalMicros).clamp(1, 240).toDouble();
+    final fps = (1000000 / totalMicros).clamp(1, maxFpsDisplay).toDouble();
     if ((_fps ?? 0).round() == fps.round()) return;
     setState(() => _fps = fps);
   }
@@ -710,7 +711,7 @@ class PaywallModal extends StatelessWidget {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Priority support']),
+            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Instant Pro unlock']),
             const SizedBox(height: 12),
             _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
