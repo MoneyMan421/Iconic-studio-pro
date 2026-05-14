@@ -163,8 +163,11 @@ class _StudioPageState extends State<StudioPage> {
   }
 
   /// Updates [editorState] and immediately persists the new value.
-  void _setEditorState(EditorState s) {
-    setState(() => editorState = s);
+  void _setEditorState(EditorState s, {int importDelta = 0}) {
+    setState(() {
+      editorState = s;
+      importsUsed += importDelta;
+    });
     widget.onStateChanged?.call(s);
     _saveState();
   }
@@ -184,10 +187,7 @@ class _StudioPageState extends State<StudioPage> {
     final bytes = result?.files.single.bytes;
     if (bytes != null) {
       final nextState = editorState.copyWith(userImageBytes: bytes);
-      setState(() {
-        importsUsed++;
-      });
-      _setEditorState(nextState);
+      _setEditorState(nextState, importDelta: 1);
     }
   }
 
