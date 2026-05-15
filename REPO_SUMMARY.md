@@ -7,6 +7,42 @@
 
 ---
 
+## GitHub Account Overview — MoneyMan421
+
+**Account type:** Individual user (no organizations or enterprises found)  
+**Total public repositories:** 4
+
+| # | Repository | Description | Language | Has Real Code? | Status |
+|---|---|---|---|---|---|
+| 1 | [Iconic-studio-pro](https://github.com/MoneyMan421/Iconic-studio-pro) | Premium icon editor with diamond refraction shaders | Dart / Flutter | ✅ Yes | Active — 19 open issues, CI running |
+| 2 | [curly-dollop](https://github.com/MoneyMan421/curly-dollop) | CardSnap — digital business card micro-SaaS | HTML / Node.js | ✅ Yes | Has code; no CI; 1 open issue |
+| 3 | [verbose-chainsaw](https://github.com/MoneyMan421/verbose-chainsaw) | GitHub Copilot Agent Mode learning exercise | Shell | ⚠️ Scaffold only | Exercise template with no real project; 2 open issues |
+| 4 | [U](https://github.com/MoneyMan421/U) | "We here 2" | — | ❌ No | **Completely empty** — no commits, no files |
+
+### Repository Details
+
+#### 1. `Iconic-studio-pro` — Active Project
+The primary project. Full details in the sections below.
+
+#### 2. `curly-dollop` — CardSnap (Node.js micro-SaaS)
+A digital business card SaaS concept built in Node.js + Express + SQLite.
+- Users create a card (name, links, photo) and share it via a short URL.
+- Three pricing tiers: Free / Pro ($9/mo) / Business ($29/mo).
+- Pages: landing, drag-and-drop builder, shareable card view, AI prompt generator.
+- Planned but not implemented: Stripe billing, NFC integration, CRM export.
+- **No CI, no tests, no deployment config.** Codebase is an early prototype.
+
+#### 3. `verbose-chainsaw` — GitHub Copilot Exercise (Empty of Real Code)
+Auto-generated from the GitHub Skills "Build Applications with GitHub Copilot Agent Mode" template.
+- Contains only scaffolding: `.devcontainer`, `.github/steps`, `.github/prompts`, `docs/`, and a `README.md` that links to an exercise issue.
+- **No application code.** This is a guided tutorial workspace, not a real project.
+
+#### 4. `U` — Completely Empty Repository
+- Created 2026-04-27. Description: "We here 2".
+- **Zero commits, zero files.** The Git repository was initialized but nothing was ever pushed.
+
+---
+
 ## What This App Is
 
 **Iconic Studio Pro** is a premium, mobile-first icon editor built with Flutter.
