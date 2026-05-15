@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:iconic_studio_pro/auth_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iconic_studio_pro/main.dart';
 
@@ -82,6 +85,43 @@ void main() {
       expect(updated.g, source.g);
       expect(updated.b, source.b);
       expect((updated.a * 255.0).round(), closeTo((0.2 * 255).round(), 1));
+    });
+  });
+
+  group('Auth login credential checks', () {
+    test('login rejects accounts without stored password hash', () async {
+      SharedPreferences.setMockInitialValues({
+        'userEmail': 'test@example.com',
+        'displayName': 'Tester',
+      });
+
+      final auth = AuthState();
+      await expectLater(
+        () => auth.login(email: 'test@example.com', password: 'anything'),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Stored credentials are invalid'),
+          ),
+        ),
+      );
+    });
+
+    test('login succeeds with a matching stored password hash', () async {
+      const password = 'MySecurePass123!';
+      final hashed = sha256.convert(utf8.encode(password)).toString();
+      SharedPreferences.setMockInitialValues({
+        'userEmail': 'test@example.com',
+        'displayName': 'Tester',
+        'userPasswordHash': hashed,
+      });
+
+      final auth = AuthState();
+      await auth.login(email: 'test@example.com', password: password);
+
+      expect(auth.isLoggedIn, isTrue);
+      expect(auth.displayName, 'Tester');
     });
   });
 
