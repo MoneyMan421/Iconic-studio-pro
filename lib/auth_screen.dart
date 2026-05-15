@@ -64,7 +64,10 @@ class AuthState extends ChangeNotifier {
     if (storedEmail != email.toLowerCase().trim()) {
       throw Exception('No account found for that email.');
     }
-    if (storedHash.isNotEmpty && storedHash != _hashPassword(password)) {
+    if (storedHash.isEmpty) {
+      throw Exception('Stored credentials are invalid. Please sign up again.');
+    }
+    if (storedHash != _hashPassword(password)) {
       throw Exception('Incorrect password.');
     }
 
