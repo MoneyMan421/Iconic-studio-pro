@@ -1,5 +1,7 @@
 # Iconic Studio Pro — Construction Structure Map
 
+Lookup key: `struc_map_file`
+
 > **How to read this file:**  Every "layer" is a floor of the building.
 > Higher layer numbers sit on top of lower ones — they depend on them but not the other way around.
 > Update this file whenever you add, rename, or remove a class, screen, or service.
