@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:iconic_studio_pro/app_colors.dart';
 import 'package:iconic_studio_pro/auth_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iconic_studio_pro/main.dart';
@@ -78,7 +79,7 @@ void main() {
 
   group('Color API withValues guard', () {
     test('withValues preserves rgb and updates alpha', () {
-      const source = AppColors.gold;
+      final source = AppColors.gold;
       final updated = source.withValues(alpha: 0.2);
 
       expect(updated.r, source.r);
