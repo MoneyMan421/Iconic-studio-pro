@@ -2,6 +2,41 @@
 
 This directory contains custom GitHub Copilot agent definitions for `MoneyMan421/Iconic-studio-pro`.
 
+## Active files
+
+The standardized `*.agent.md` files in this directory are the active recommended agent definitions. These files represent the current operational standard and should be used as the primary reference for agent roles, boundaries, approval requirements, and responsible AI alignment.
+
+Current active files:
+- `program-agent.agent.md`
+- `ci-cd-pipeline.agent.md`
+- `readme-specialist.agent.md`
+- `supervisor-specialist.agent.md`
+- `master-agent.agent.md`
+- `pilot-agent.agent.md`
+- `science-agent.agent.md`
+- `README.md`
+
+## Legacy files
+
+Some files in this directory are retained as legacy files.
+
+Legacy files are older, superseded, experimental, or non-standard files that might otherwise be deleted during cleanup, but are intentionally preserved for archival and historical purposes. They help document the path of the project, including earlier drafts, naming patterns, structural experiments, and previous versions of agent definitions.
+
+Legacy files are kept to preserve traceability and design history. They should not be treated as the primary active standard when a newer standardized agent file exists.
+
+Current legacy files:
+- `Program_Agent_md`
+- `my-CI-CD.agent.md`
+- `my-README specialist Agent md`
+- `my-SSA.agent.md`
+- `my-agent.agent.md`
+- `my-pilotmd`
+- `my-science.agent.md`
+
+## Repository rule
+
+Files with historical value are archived as Legacy files rather than deleted.
+
 ## Agents
 
 ### `program-agent`
