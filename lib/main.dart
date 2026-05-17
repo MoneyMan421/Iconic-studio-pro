@@ -486,7 +486,7 @@ class _StudioPageState extends State<StudioPage> {
           SizedBox(width: 48),
           _StatItem(label: 'Format', value: 'PNG'),
           SizedBox(width: 48),
-          _StatItem(label: 'FPS', value: '120'),
+          _StatItem(label: 'Export', value: '3x Density'),
         ],
       ),
     );
