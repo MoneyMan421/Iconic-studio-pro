@@ -125,14 +125,12 @@ void main() {
     });
   });
 
-  group('SharedPreferences separation', () {
-    test('main.dart exports studio widgets without direct SharedPreferences dependency', () {
-      // This test ensures the main library can be imported successfully.
-      // The actual enforcement of SharedPreferences separation happens at the
-      // architecture level: lib/main.dart uses EditorStorage instead of
-      // SharedPreferences directly, maintaining clean separation of concerns.
-      // If SharedPreferences were directly used in main.dart, the code would
-      // violate our architecture convention (documented in custom instructions).
+  group('Architecture: main.dart widget exports', () {
+    test('main.dart exports core studio widgets for reuse', () {
+      // Verifies that the main library properly exports its key widgets.
+      // The architectural constraint (no direct SharedPreferences usage in main.dart)
+      // is enforced through code organization: main.dart uses EditorStorage abstraction
+      // instead of SharedPreferences directly. See custom instructions for details.
       expect(main_lib.StudioPage, isNotNull);
       expect(main_lib.EditorState, isNotNull);
     });
