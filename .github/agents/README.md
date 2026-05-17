@@ -5,39 +5,57 @@ This directory contains custom GitHub Copilot agent definitions for `MoneyMan421
 ## Agents
 
 ### `program-agent`
-- **Purpose:** General-purpose coding and implementation agent.
-- **Use when:** You need fast execution on software development tasks.
-- **Do not use when:** The task is specifically about documentation, workflow supervision, CI/CD, or research.
+- **Purpose:** General-purpose coding, refactoring, and bug-fix execution.
+- **Use when:** You need implementation work on application code or other straightforward software development tasks.
+- **Do not use when:** The task is specifically about CI/CD, standalone documentation, workflow governance, orchestration planning, or research-heavy exploration.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `ci-cd-pipeline-agent`
-- **Purpose:** CI/CD setup, maintenance, troubleshooting, and approved expansion.
+- **Purpose:** CI/CD setup, maintenance, troubleshooting, and approved pipeline expansion.
 - **Use when:** You need help with workflows, automation, builds, tests, deployment pipelines, or CI configuration.
-- **Do not use when:** The task is general coding unrelated to pipeline systems.
+- **Do not use when:** The task is general product coding unrelated to pipeline systems, or broad cross-agent planning.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `readme-specialist-agent`
 - **Purpose:** README and standalone documentation improvement.
-- **Use when:** You need to create, rewrite, or organize README files and related documentation.
-- **Do not use when:** The task requires changing source code or generated API documentation.
+- **Use when:** You need to create, rewrite, organize, or clarify README files and related project documentation.
+- **Do not use when:** The task requires modifying source code, generated API documentation, CI/CD configuration, or governance/orchestration behavior.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `supervisor-specialist-agent`
-- **Purpose:** Workflow oversight and coordination guidance.
-- **Use when:** You want task flow supervision, sequencing help, or better coordination between specialized agents.
-- **Do not use when:** You need direct implementation of code, docs, or pipeline work.
+- **Purpose:** Workflow governance, scope monitoring, and responsible-AI oversight.
+- **Use when:** You want an agent to monitor workflow discipline, maintain role boundaries, and reinforce safe, orderly coordination.
+- **Do not use when:** You need direct implementation of code, docs, pipelines, or high-level orchestration planning.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `master-agent`
-- **Purpose:** Multi-agent orchestration and safe task coordination.
-- **Use when:** A task spans multiple concerns and benefits from planning, approvals, or structured orchestration.
-- **Do not use when:** A single specialized agent can handle the task directly.
+- **Purpose:** Multi-agent orchestration, planning, and delegation.
+- **Use when:** A task spans multiple concerns and benefits from decomposition, sequencing, approval-aware planning, or structured coordination between specialists.
+- **Do not use when:** A single specialized agent can handle the task directly, or when the need is governance oversight rather than orchestration.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `pilot-agent`
-- **Purpose:** Tool-driven task execution.
-- **Use when:** The task depends heavily on using tools, actions, or interactive workflow support.
-- **Do not use when:** The task is mainly conceptual planning or documentation strategy.
+- **Purpose:** Tool-driven task execution and interactive action workflows.
+- **Use when:** The task depends heavily on tool usage, action execution, or interactive workflow support.
+- **Do not use when:** The task is mainly about planning, governance, documentation ownership, or deep research without a strong tool-execution component.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
 
 ### `science-agent`
-- **Purpose:** Research, experimentation, and creative technical investigation.
-- **Use when:** You want structured exploration, brainstorming, or experimental problem-solving.
-- **Do not use when:** The task is straightforward and better handled by a more specific specialized agent.
+- **Purpose:** Research, experimentation, brainstorming, and exploratory technical investigation.
+- **Use when:** You want structured exploration, idea generation, experimental analysis, or creative technical inquiry.
+- **Do not use when:** The task is a straightforward implementation, documentation revision, CI/CD operation, or workflow governance responsibility.
+- **Approval rule:** Requires user approval before destructive, irreversible, or otherwise high-impact changes.
+
+## Validation checklist
+
+Before adding or updating an agent file, verify the following:
+
+- **Filename format:** Uses the standard pattern `<role>.agent.md`
+- **Agent name uniqueness:** The `name` field is unique within this directory
+- **Description clarity:** The description clearly defines purpose, scope, and boundaries
+- **Overlap review:** The agent does not substantially duplicate the role of an existing agent
+- **Approval rule:** The description states that user approval is required before destructive, irreversible, or otherwise high-impact changes
+- **Responsible AI alignment:** The description reinforces safe scope control, transparency, and appropriate escalation to the user when needed
 
 ## Naming convention
 
