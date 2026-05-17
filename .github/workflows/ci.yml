@@ -5,17 +5,6 @@ on:
   pull_request:
 
 jobs:
-  my_first_job:
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: My first step
-        uses: actions/hello_world@main
-        with:
-          first_name: Mona
-          middle_name: The
-          last_name: Octocat
-
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
@@ -26,6 +15,16 @@ jobs:
         with:
           channel: stable
           cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
       - name: Validate asset directory
         run: test -d assets/icons
@@ -48,11 +47,47 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Run widget tests with coverage
         run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-iconic-studio-pro
+          fail_ci_if_error: false
+
+      - name: Check code coverage threshold
+        run: |
+          # Extract coverage percentage from lcov.info
+          if [ -f coverage/lcov.info ]; then
+            total_lines=$(grep -c "^DA:" coverage/lcov.info || echo "0")
+            covered_lines=$(grep "^DA:" coverage/lcov.info | grep -cv ",0$" || echo "0")
+            if [ "$total_lines" -gt 0 ]; then
+              coverage=$((covered_lines * 100 / total_lines))
+              echo "Code coverage: $coverage%"
+              if [ "$coverage" -lt 60 ]; then
+                echo "❌ Coverage is below 60% threshold"
+                exit 1
+              else
+                echo "✅ Coverage meets 60% threshold"
+              fi
+            fi
+          fi
 
   build:
     name: Build (${{ matrix.target }})
@@ -65,12 +100,18 @@ jobs:
           - target: android
             os: ubuntu-latest
             command: flutter build apk --debug
+            artifact_path: build/app/outputs/flutter-apk/app-debug.apk
+            artifact_name: android-debug-apk
           - target: ios
             os: macos-latest
             command: flutter build ios --debug --no-codesign
+            artifact_path: build/ios/iphoneos/
+            artifact_name: ios-debug-app
           - target: web
             os: ubuntu-latest
             command: flutter build web --release
+            artifact_path: build/web/
+            artifact_name: web-build
     steps:
       - uses: actions/checkout@v4
 
@@ -78,6 +119,16 @@ jobs:
         with:
           channel: stable
           cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
       - name: Ensure Android and iOS platform folders exist for CI builds
         if: matrix.target != 'web'
@@ -88,3 +139,10 @@ jobs:
 
       - name: Build debug app
         run: ${{ matrix.command }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          retention-days: 30
