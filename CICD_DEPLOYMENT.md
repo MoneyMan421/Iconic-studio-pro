@@ -149,47 +149,30 @@ base64 -i profile.mobileprovision > profile.base64.txt
 
 ## Security Scanning
 
-### CodeQL Analysis (Phase 4)
+### Automated Security Scanning
 
-To enable CodeQL security scanning:
+The repository includes a comprehensive `security.yml` workflow that runs:
+- **CodeQL Analysis** - Static code analysis for security vulnerabilities
+- **Dependency Vulnerability Scan** - Checks for known vulnerabilities in dependencies
+- **License Compliance Check** - Ensures all dependencies use compatible licenses
+- **Secret Detection** - Scans for accidentally committed secrets using TruffleHog
 
-1. Create `.github/workflows/codeql.yml`:
-```yaml
-name: CodeQL Analysis
+This workflow runs:
+- On every push to `main` and `develop` branches
+- On pull requests to `main` and `develop`
+- Weekly on Mondays (scheduled scan)
+- On-demand via workflow dispatch
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 0 * * 1' # Weekly on Monday
+### Viewing Security Results
 
-jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
+1. Navigate to the **Security** tab in your repository
+2. Click **Code scanning alerts** to view CodeQL findings
+3. Click **Dependabot alerts** to view dependency vulnerabilities  
+4. Check the **Actions** tab → **Security Scanning** workflow for detailed reports
 
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript, java, swift
-      
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-      
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-```
+### Additional Security Tools (Optional)
 
-2. Enable Dependabot security updates:
+To enable additional security features:
    - Go to **Settings → Security → Code security and analysis**
    - Enable Dependabot alerts
    - Enable Dependabot security updates

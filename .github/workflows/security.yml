@@ -46,6 +46,8 @@ jobs:
   dependency-scan:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -85,6 +87,8 @@ jobs:
   license-scan:
     name: License Compliance Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -114,6 +118,8 @@ jobs:
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,6 +136,7 @@ jobs:
     name: Security Summary
     needs: [codeql, dependency-scan, license-scan, secret-scan]
     runs-on: ubuntu-latest
+    permissions: {}
     if: always()
     steps:
       - name: Security Scan Summary

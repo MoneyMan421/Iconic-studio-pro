@@ -23,6 +23,8 @@ jobs:
   build-android:
     name: Build Android (Production)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -100,6 +102,8 @@ jobs:
   build-ios:
     name: Build iOS (Production)
     runs-on: macos-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -154,7 +158,7 @@ jobs:
 
       - name: Build iOS App (Production)
         run: |
-          flutter build ios --release --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }}
+          flutter build ios --release --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }} --no-codesign
 
       - name: Build IPA
         run: |
@@ -181,6 +185,8 @@ jobs:
   build-web:
     name: Build Web (Production)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -226,6 +232,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -290,6 +298,7 @@ jobs:
     name: Notify Release
     needs: [build-android, build-ios, build-web, create-release]
     runs-on: ubuntu-latest
+    permissions: {}
     if: always()
     steps:
       - name: Release Summary
