@@ -22,6 +22,8 @@ dependencies:
   firebase_storage: ^11.7.7
   # Shared prefs (keep for local editor state)
   shared_preferences: ^2.2.3
+  # Web-only - modern dart:html replacement
+  web: ^1.0.0
 
 dev_dependencies:
   flutter_test:
