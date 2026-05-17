@@ -3,6 +3,7 @@
 **Premium Icon Editor with Diamond Refraction Shaders**
 
 [![CI](https://github.com/MoneyMan421/Iconic-studio-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/MoneyMan421/Iconic-studio-pro/actions/workflows/ci.yml)
+[![Security](https://github.com/MoneyMan421/Iconic-studio-pro/actions/workflows/security.yml/badge.svg)](https://github.com/MoneyMan421/Iconic-studio-pro/actions/workflows/security.yml)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -77,6 +78,7 @@ For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](FIREBASE_SETUP
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — System design, component diagrams, data flow, design patterns, and scalability considerations
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** — Development environment setup, building, testing, coding conventions, and common tasks
 - **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** — Step-by-step Firebase configuration guide
+- **[CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md)** — CI/CD pipelines, deployment workflows, secrets setup, and rollback procedures
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
 
 ### Quick Links
@@ -89,6 +91,7 @@ For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](FIREBASE_SETUP
 | Running Tests | [DEVELOPMENT.md](DEVELOPMENT.md#running-tests) |
 | Code Conventions | [DEVELOPMENT.md](DEVELOPMENT.md#code-style-and-conventions) |
 | Firebase Setup | [FIREBASE_SETUP.md](FIREBASE_SETUP.md) |
+| CI/CD & Deployment | [CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md) |
 | API Reference | [DOCUMENTATION.md](DOCUMENTATION.md#data-models) |
 | Troubleshooting | [DEVELOPMENT.md](DEVELOPMENT.md#troubleshooting) |
 
