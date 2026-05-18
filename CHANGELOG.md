@@ -8,6 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reset to Defaults button** — appears at the bottom of the editor control panel;
+  resets all numeric parameters to factory values while preserving the loaded image.
+- **CONTRIBUTING.md** — contributor guide covering setup, coding conventions, testing
+  requirements, commit format, and PR checklist.
+- **GitHub issue templates** — structured bug-report and feature-request forms
+  (`.github/ISSUE_TEMPLATE/`).
+- **GitHub PR template** — standardised pull-request checklist
+  (`.github/pull_request_template.md`).
+- **`EditorStorage` unit tests** — save/load round-trip, defaults, and overwrite
+  scenarios.
+- **`PaywallModal` widget tests** — tier rendering, callback wiring, copy
+  accuracy, and false-advertising guard (`Cloud sync` must not appear).
+- **Additional `AuthState` tests** — wrong password, unknown email, no-account,
+  sign-up, and logout flows.
+
+### Changed
+- **PaywallModal Pro Monthly features** — replaced the inaccurate *Cloud sync*
+  claim with *Early shader access* and *Priority support*.
+- **Paywall "Upgrade Now" flow** — replaced the dead-end "coming soon" snackbar
+  with a clear dialog explaining that in-app purchases are not yet available.
+- **CI workflow** — removed the `my_first_job` placeholder step that referenced
+  the non-existent `actions/hello_world@main` action, causing all CI runs to
+  contain an error-level job.
+
+### Fixed
+- False advertising: `PaywallModal` no longer lists *Cloud sync* as a Pro
+  feature when no sync functionality exists.
+- Stale CI job: `my_first_job` referenced a non-existent GitHub Action and
+  produced a mandatory-error job on every run.
+
+### Added (Documentation)
 - Comprehensive technical documentation (DOCUMENTATION.md)
 - Architecture documentation (ARCHITECTURE.md)
 - Development guide (DEVELOPMENT.md)

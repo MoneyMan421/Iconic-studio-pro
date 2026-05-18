@@ -108,10 +108,11 @@ StudioPage  [StatefulWidget]
   │
   ├── Builder widgets
   │     ├── _buildHeader()        — "IconStudio PRO" + Premium badge
-  │     ├── _buildControls()      — 3 groups of sliders
+  │     ├── _buildControls()      — 3 groups of sliders + Reset button
   │     │     ├── TRANSFORM       : Scale, Rotation
   │     │     ├── ADJUSTMENTS     : Brightness, Contrast, Saturation, Blur
-  │     │     └── DIAMOND PHYSICS : Refraction, Sparkle, Facet Depth
+  │     │     ├── DIAMOND PHYSICS : Refraction, Sparkle, Facet Depth
+  │     │     └── _buildResetButton() — resets params to defaults, keeps image
   │     ├── _buildSlider()        — label + Slider + value chip
   │     ├── _buildExportButton()  — "Export Icon" ElevatedButton
   │     ├── _buildStatsBar()      — Ultra HD / PNG / 120 FPS
@@ -131,8 +132,9 @@ StudioPage  [StatefulWidget]
   │                         uRotation, uScale, image sampler
   │
   └── PaywallModal  [StatelessWidget]
-        ├── Pro Monthly  $4.99/mo
-        └── Pro Lifetime $49.99
+        ├── Pro Monthly  $4.99/mo  — Unlimited imports, Early shader access, Priority support
+        └── Pro Lifetime $49.99   — Everything in Pro, Pay once keep forever
+        └── onUpgrade callback → _showProComingSoonDialog() (honest "not yet available" message)
 ```
 
 ---

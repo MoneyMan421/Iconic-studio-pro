@@ -197,13 +197,39 @@ class _StudioPageState extends State<StudioPage> {
       builder: (_) => PaywallModal(
         onUpgrade: () {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
-              backgroundColor: Color(0xFFD4AF37),
-            ),
-          );
+          _showProComingSoonDialog();
         },
+      ),
+    );
+  }
+
+  void _showProComingSoonDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.panel,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.diamond, color: AppColors.gold, size: 22),
+            SizedBox(width: 10),
+            Text('Pro — Coming Soon',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'In-app purchases are not yet available. We are working hard to bring '
+          'Pro to all platforms. Check back soon or watch the GitHub releases page '
+          'for updates.',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it',
+                style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -365,7 +391,31 @@ class _StudioPageState extends State<StudioPage> {
         _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => _setEditorState(editorState.copyWith(refractionIndex: v)), decimals: 2),
         _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => _setEditorState(editorState.copyWith(sparkleIntensity: v))),
         _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
+        const SizedBox(height: 24),
+        _buildResetButton(),
       ],
+    );
+  }
+
+  /// Resets all numeric parameters to factory defaults, preserving the current
+  /// user image so the preview stays live.
+  Widget _buildResetButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.restart_alt, size: 16),
+        label: const Text('Reset to Defaults'),
+        onPressed: () => _setEditorState(
+          EditorState(userImageBytes: editorState.userImageBytes),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textSecondary,
+          side: const BorderSide(color: AppColors.panelBorder),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
     );
   }
 
@@ -705,7 +755,7 @@ class PaywallModal extends StatelessWidget {
             const Text('You\'ve used your 2 free imports. Upgrade to continue.', 
               textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 24),
-            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'All shaders', 'Cloud sync']),
+            _buildTier('Pro Monthly', '\$4.99/mo', ['Unlimited imports', 'Early shader access', 'Priority support']),
             const SizedBox(height: 12),
             _buildTier('Pro Lifetime', '\$49.99', ['Everything in Pro', 'Pay once, keep forever'], isPopular: true),
             const SizedBox(height: 24),
