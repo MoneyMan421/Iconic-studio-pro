@@ -6,8 +6,11 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iconic_studio_pro/app_colors.dart';
 import 'package:iconic_studio_pro/auth_screen.dart';
+import 'package:iconic_studio_pro/editor_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iconic_studio_pro/main.dart' as main_lib;
+import 'package:iconic_studio_pro/paywall_modal.dart';
+import 'package:iconic_studio_pro/preview_canvas.dart';
 
 void main() {
   group('App launch smoke', () {
@@ -17,7 +20,7 @@ void main() {
 
     testWidgets('renders key studio UI', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
+        const MaterialApp(home: main_lib.StudioPage()),
       );
       await tester.pump();
 
@@ -47,7 +50,7 @@ void main() {
 
     testWidgets('export button is present and tappable', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: StudioPage()),
+        const MaterialApp(home: main_lib.StudioPage()),
       );
       await tester.pump();
 
@@ -56,6 +59,58 @@ void main() {
 
       await tester.tap(exportButton);
       await tester.pump();
+    });
+  });
+
+  group('PreviewCanvas widget', () {
+    testWidgets('shows upload copy and triggers callback when tapped', (
+      tester,
+    ) async {
+      var taps = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PreviewCanvas(
+              state: EditorState(),
+              onPickImage: () => taps++,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Preview Canvas'), findsOneWidget);
+      expect(find.text('Upload your icon'), findsOneWidget);
+      expect(find.text('PNG or JPG (max. 5 MB)'), findsOneWidget);
+
+      await tester.tap(find.text('Upload your icon'));
+      await tester.pump();
+
+      expect(taps, 1);
+    });
+  });
+
+  group('Paywall modal', () {
+    testWidgets('renders tiers and fires upgrade callback', (tester) async {
+      var upgraded = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PaywallModal(onUpgrade: () => upgraded = true),
+          ),
+        ),
+      );
+
+      expect(find.text('Unlock Pro'), findsOneWidget);
+      expect(find.text('Pro Monthly'), findsOneWidget);
+      expect(find.text('Pro Lifetime'), findsOneWidget);
+      expect(find.text('Upgrade Now'), findsOneWidget);
+
+      await tester.tap(find.text('Upgrade Now'));
+      await tester.pump();
+
+      expect(upgraded, isTrue);
     });
   });
 
@@ -133,6 +188,42 @@ void main() {
       // instead of SharedPreferences directly. See custom instructions for details.
       expect(main_lib.StudioPage, isNotNull);
       expect(main_lib.EditorState, isNotNull);
+    });
+  });
+
+  group('StudioPage embedded mode', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({
+        'scale': 12.0,
+        'importsUsed': 2,
+      });
+    });
+
+    testWidgets('uses initialState and emits changes without loading storage', (
+      tester,
+    ) async {
+      EditorState? latestState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: main_lib.StudioPage(
+            embeddedMode: true,
+            initialState: EditorState(scale: 72),
+            onStateChanged: (state) => latestState = state,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('72%'), findsOneWidget);
+      expect(find.text('2/2 free imports used'), findsNothing);
+
+      final scaleSlider = tester.widget<Slider>(find.byType(Slider).first);
+      scaleSlider.onChanged!(80);
+      await tester.pump();
+
+      expect(find.text('80%'), findsOneWidget);
+      expect(latestState?.scale, 80);
     });
   });
 }
