@@ -5,6 +5,8 @@
 
 ---
 
+For org structure, ownership, and operating cadence, see `deliverables/ORGANIZATIONAL_BLUEPRINT.md`.
+
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)

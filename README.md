@@ -78,6 +78,7 @@ For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](FIREBASE_SETUP
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** — Development environment setup, building, testing, coding conventions, and common tasks
 - **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** — Step-by-step Firebase configuration guide
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
+- **[deliverables/ORGANIZATIONAL_BLUEPRINT.md](deliverables/ORGANIZATIONAL_BLUEPRINT.md)** — Ownership, roles, operating cadence, and delivery governance
 
 ### Quick Links
 
@@ -90,6 +91,7 @@ For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](FIREBASE_SETUP
 | Code Conventions | [DEVELOPMENT.md](DEVELOPMENT.md#code-style-and-conventions) |
 | Firebase Setup | [FIREBASE_SETUP.md](FIREBASE_SETUP.md) |
 | API Reference | [DOCUMENTATION.md](DOCUMENTATION.md#data-models) |
+| Organizational Blueprint | [deliverables/ORGANIZATIONAL_BLUEPRINT.md](deliverables/ORGANIZATIONAL_BLUEPRINT.md) |
 | Troubleshooting | [DEVELOPMENT.md](DEVELOPMENT.md#troubleshooting) |
 
 ---
