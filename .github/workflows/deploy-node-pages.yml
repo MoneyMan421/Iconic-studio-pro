@@ -1,0 +1,147 @@
+name: Deploy (Node.js → GitHub Pages)
+
+on:
+  workflow_dispatch:
+    inputs:
+      working-directory:
+        description: Directory containing the Node.js project (package.json)
+        required: false
+        default: .
+        type: string
+      node-version:
+        description: Node.js version
+        required: false
+        default: "20"
+        type: string
+      build-dir:
+        description: Build output directory (relative to working-directory)
+        required: false
+        default: dist
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/pnpm-lock.yaml"
+      - "**/yarn.lock"
+      - ".github/workflows/deploy-node-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        hashFiles(
+          format(
+            '{0}/package.json',
+            github.event_name == 'workflow_dispatch' && inputs.working-directory || vars.NODE_WORKDIR || '.'
+          )
+        ) != ''
+      }}
+    env:
+      WORKDIR: ${{ github.event_name == 'workflow_dispatch' && inputs.working-directory || vars.NODE_WORKDIR || '.' }}
+      NODE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.node-version || vars.NODE_VERSION || '20' }}
+      BUILD_DIR: ${{ github.event_name == 'workflow_dispatch' && inputs.build-dir || vars.NODE_BUILD_DIR || 'dist' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect package manager
+        id: pm
+        run: |
+          set -euo pipefail
+          if [ -f "${WORKDIR}/pnpm-lock.yaml" ]; then
+            echo "pm=pnpm" >> "${GITHUB_OUTPUT}"
+            echo "lockfile=${WORKDIR}/pnpm-lock.yaml" >> "${GITHUB_OUTPUT}"
+          elif [ -f "${WORKDIR}/yarn.lock" ]; then
+            echo "pm=yarn" >> "${GITHUB_OUTPUT}"
+            echo "lockfile=${WORKDIR}/yarn.lock" >> "${GITHUB_OUTPUT}"
+          elif [ -f "${WORKDIR}/package-lock.json" ]; then
+            echo "pm=npm" >> "${GITHUB_OUTPUT}"
+            echo "lockfile=${WORKDIR}/package-lock.json" >> "${GITHUB_OUTPUT}"
+          else
+            echo "pm=npm" >> "${GITHUB_OUTPUT}"
+            echo "lockfile=${WORKDIR}/package-lock.json" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ steps.pm.outputs.pm }}
+          cache-dependency-path: ${{ steps.pm.outputs.lockfile }}
+
+      - name: Enable Corepack
+        if: ${{ steps.pm.outputs.pm != 'npm' }}
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          set -euo pipefail
+          case "${{ steps.pm.outputs.pm }}" in
+            pnpm) pnpm install --frozen-lockfile ;;
+            yarn)
+              if [ -f .yarnrc.yml ]; then yarn install --immutable; else yarn install --frozen-lockfile; fi
+              ;;
+            npm)
+              if [ -f package-lock.json ]; then npm ci; else npm install; fi
+              ;;
+          esac
+
+      - name: Run tests (if present)
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          set -euo pipefail
+          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)"; then
+            case "${{ steps.pm.outputs.pm }}" in
+              pnpm) pnpm test ;;
+              yarn) yarn test ;;
+              npm) npm test ;;
+            esac
+          else
+            echo "No test script; skipping."
+          fi
+
+      - name: Build
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          set -euo pipefail
+          if node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            case "${{ steps.pm.outputs.pm }}" in
+              pnpm) pnpm run build ;;
+              yarn) yarn build ;;
+              npm) npm run build ;;
+            esac
+          else
+            echo "No build script found in package.json (scripts.build)."
+            echo "If you already have a static output directory, set build-dir to that folder and re-run."
+          fi
+
+          test -d "${BUILD_DIR}"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.WORKDIR }}/${{ env.BUILD_DIR }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

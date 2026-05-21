@@ -180,6 +180,15 @@ flutter build web --release
 
 ---
 
+## 🚢 Deployment (Node.js)
+
+This repo includes optional GitHub Actions workflows you can reuse if you add a Node.js project:
+
+- `/.github/workflows/deploy-node-pages.yml` deploys static Node builds to GitHub Pages (runs on `main` pushes when a `package.json` exists, or via manual dispatch).
+- `/.github/workflows/publish-node-ghcr.yml` builds a Docker image and publishes it to GHCR (runs when a `Dockerfile` exists, or via manual dispatch/release).
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
