@@ -1,0 +1,160 @@
+name: Deploy Node.js to GitHub Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      working_directory:
+        description: Path to the Node.js project (where package.json lives)
+        required: false
+        default: .
+      node_version:
+        description: Node.js version to use
+        required: false
+        default: "20"
+      test_command:
+        description: Test command to run (leave blank to skip)
+        required: false
+        default: "npm test --if-present"
+      build_command:
+        description: Build command to run
+        required: false
+        default: "npm run build"
+      output_dir:
+        description: Build output directory (relative to working_directory)
+        required: false
+        default: dist
+
+  push:
+    branches: [main]
+    paths:
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/pnpm-lock.yaml"
+      - "**/yarn.lock"
+      - ".github/workflows/node-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  detect_node_project:
+    name: Detect Node project
+    runs-on: ubuntu-latest
+    outputs:
+      found: ${{ steps.detect.outputs.found }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        shell: bash
+        env:
+          WORKING_DIRECTORY: ${{ github.event.inputs.working_directory }}
+        run: |
+          set -euo pipefail
+          wd="${WORKING_DIRECTORY:-.}"
+          if [ -f "${wd}/package.json" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build_and_deploy:
+    name: Build & Deploy
+    needs: detect_node_project
+    if: needs.detect_node_project.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: vars
+        shell: bash
+        env:
+          WORKING_DIRECTORY: ${{ github.event.inputs.working_directory }}
+          NODE_VERSION: ${{ github.event.inputs.node_version }}
+          TEST_COMMAND: ${{ github.event.inputs.test_command }}
+          BUILD_COMMAND: ${{ github.event.inputs.build_command }}
+          OUTPUT_DIR: ${{ github.event.inputs.output_dir }}
+        run: |
+          set -euo pipefail
+          echo "wd=${WORKING_DIRECTORY:-.}" >> "$GITHUB_OUTPUT"
+          echo "node=${NODE_VERSION:-20}" >> "$GITHUB_OUTPUT"
+          echo "test=${TEST_COMMAND:-npm test --if-present}" >> "$GITHUB_OUTPUT"
+          echo "build=${BUILD_COMMAND:-npm run build}" >> "$GITHUB_OUTPUT"
+          echo "out=${OUTPUT_DIR:-dist}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect package manager
+        id: pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          wd="${{ steps.vars.outputs.wd }}"
+
+          if [ -f "${wd}/pnpm-lock.yaml" ]; then
+            echo "manager=pnpm" >> "$GITHUB_OUTPUT"
+            echo "install=pnpm install --frozen-lockfile" >> "$GITHUB_OUTPUT"
+            echo "lockfile=${wd}/pnpm-lock.yaml" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -f "${wd}/yarn.lock" ]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+            echo "install=yarn install --frozen-lockfile" >> "$GITHUB_OUTPUT"
+            echo "lockfile=${wd}/yarn.lock" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -f "${wd}/package-lock.json" ]; then
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+            echo "install=npm ci" >> "$GITHUB_OUTPUT"
+            echo "lockfile=${wd}/package-lock.json" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "manager=npm" >> "$GITHUB_OUTPUT"
+          echo "install=npm install" >> "$GITHUB_OUTPUT"
+          echo "lockfile=${wd}/package.json" >> "$GITHUB_OUTPUT"
+
+      - name: Enable Corepack (pnpm/yarn)
+        if: steps.pm.outputs.manager != 'npm'
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.vars.outputs.node }}
+          cache: ${{ steps.pm.outputs.manager }}
+          cache-dependency-path: ${{ steps.pm.outputs.lockfile }}
+
+      - name: Install dependencies
+        working-directory: ${{ steps.vars.outputs.wd }}
+        run: ${{ steps.pm.outputs.install }}
+
+      - name: Run tests (optional)
+        if: steps.vars.outputs.test != ''
+        working-directory: ${{ steps.vars.outputs.wd }}
+        run: ${{ steps.vars.outputs.test }}
+
+      - name: Build
+        working-directory: ${{ steps.vars.outputs.wd }}
+        run: ${{ steps.vars.outputs.build }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.vars.outputs.wd }}/${{ steps.vars.outputs.out }}
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

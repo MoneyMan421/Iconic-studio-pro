@@ -494,6 +494,23 @@ git push origin feature/my-feature
 - Test job must pass
 - Build jobs must pass
 
+**Optional: Node.js GitHub Pages deploy**
+
+This repository includes a reusable GitHub Actions workflow for deploying *Node.js static builds* to GitHub Pages:
+
+- Workflow: `.github/workflows/node-pages.yml`
+- Triggers:
+  - Automatic on `push` to `main` when a `package.json` exists at the repo root
+  - Manual via GitHub Actions → **Deploy Node.js to GitHub Pages** (`workflow_dispatch`)
+
+Manual run example (builds a Node project in a subfolder and deploys `dist/`):
+```bash
+# GitHub UI: Actions → Deploy Node.js to GitHub Pages → Run workflow
+# - working_directory: path/to/node-app
+# - build_command: npm run build
+# - output_dir: dist
+```
+
 6. **Code Review**
 - Address reviewer feedback
 - Update PR as needed
