@@ -10,6 +10,7 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:file_picker/file_picker.dart';
 import 'app_colors.dart';
 import 'auth_screen.dart';
+import 'editor_storage.dart';
 import 'export_helper.dart';
 import 'firebase_options.dart';
 
@@ -95,7 +96,16 @@ class IconStudioPro extends StatelessWidget {
 }
 
 class StudioPage extends StatefulWidget {
-  const StudioPage({super.key});
+  final bool embeddedMode;
+  final EditorState? initialState;
+  final ValueChanged<EditorState>? onStateChanged;
+
+  const StudioPage({
+    super.key,
+    this.embeddedMode = false,
+    this.initialState,
+    this.onStateChanged,
+  });
 
   @override
   State<StudioPage> createState() => _StudioPageState();
@@ -107,6 +117,67 @@ class _StudioPageState extends State<StudioPage> {
   static const int freeImportLimit = 2;
   static const double exportPixelRatio = 3.0;
   final GlobalKey _previewBoundaryKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.embeddedMode) {
+      if (widget.initialState != null) {
+        editorState = widget.initialState!;
+      }
+      return;
+    }
+    _loadState();
+  }
+
+  /// Restores previously saved editor settings from persistent storage.
+  Future<void> _loadState() async {
+    final saved = await EditorStorage.load();
+    if (!mounted) return;
+    setState(() {
+      editorState = EditorState(
+        scale: saved.scale,
+        rotation: saved.rotation,
+        brightness: saved.brightness,
+        contrast: saved.contrast,
+        saturation: saved.saturation,
+        blur: saved.blur,
+        refractionIndex: saved.refractionIndex,
+        sparkleIntensity: saved.sparkleIntensity,
+        facetDepth: saved.facetDepth,
+      );
+      importsUsed = saved.importsUsed;
+    });
+  }
+
+  /// Persists the current editor settings and import count. Fire-and-forget.
+  void _saveState() {
+    if (widget.embeddedMode) {
+      return;
+    }
+    EditorStorage.save(
+      scale: editorState.scale,
+      rotation: editorState.rotation,
+      brightness: editorState.brightness,
+      contrast: editorState.contrast,
+      saturation: editorState.saturation,
+      blur: editorState.blur,
+      refractionIndex: editorState.refractionIndex,
+      sparkleIntensity: editorState.sparkleIntensity,
+      facetDepth: editorState.facetDepth,
+      importsUsed: importsUsed,
+    );
+  }
+
+  /// Updates [editorState] and immediately persists the new value.
+  void _setEditorState(EditorState s, {int importDelta = 0}) {
+    setState(() {
+      editorState = s;
+      importsUsed += importDelta;
+    });
+    widget.onStateChanged?.call(s);
+    _saveState();
+  }
 
   Future<void> _pickImage() async {
     if (importsUsed >= freeImportLimit) {
@@ -122,10 +193,8 @@ class _StudioPageState extends State<StudioPage> {
 
     final bytes = result?.files.single.bytes;
     if (bytes != null) {
-      setState(() {
-        editorState = editorState.copyWith(userImageBytes: bytes);
-        importsUsed++;
-      });
+      final nextState = editorState.copyWith(userImageBytes: bytes);
+      _setEditorState(nextState, importDelta: 1);
     }
   }
 
@@ -133,7 +202,17 @@ class _StudioPageState extends State<StudioPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PaywallModal(onUpgrade: () => Navigator.pop(context)),
+      builder: (_) => PaywallModal(
+        onUpgrade: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pro upgrade coming soon! Thank you for your interest.'),
+              backgroundColor: Color(0xFFD4AF37),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -281,19 +360,19 @@ class _StudioPageState extends State<StudioPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSection('TRANSFORM'),
-        _buildSlider('Scale', editorState.scale, 0, 100, (v) => setState(() => editorState = editorState.copyWith(scale: v)), suffix: '%'),
-        _buildSlider('Rotation', editorState.rotation, -180, 180, (v) => setState(() => editorState = editorState.copyWith(rotation: v)), suffix: '°'),
+        _buildSlider('Scale', editorState.scale, 0, 100, (v) => _setEditorState(editorState.copyWith(scale: v)), suffix: '%'),
+        _buildSlider('Rotation', editorState.rotation, -180, 180, (v) => _setEditorState(editorState.copyWith(rotation: v)), suffix: '°'),
         const SizedBox(height: 32),
         _buildSection('ADJUSTMENTS'),
-        _buildSlider('Brightness', editorState.brightness, 0, 200, (v) => setState(() => editorState = editorState.copyWith(brightness: v)), suffix: '%'),
-        _buildSlider('Contrast', editorState.contrast, 0, 200, (v) => setState(() => editorState = editorState.copyWith(contrast: v)), suffix: '%'),
-        _buildSlider('Saturation', editorState.saturation, 0, 200, (v) => setState(() => editorState = editorState.copyWith(saturation: v)), suffix: '%'),
-        _buildSlider('Blur', editorState.blur, 0, 20, (v) => setState(() => editorState = editorState.copyWith(blur: v)), suffix: 'px'),
+        _buildSlider('Brightness', editorState.brightness, 0, 200, (v) => _setEditorState(editorState.copyWith(brightness: v)), suffix: '%'),
+        _buildSlider('Contrast', editorState.contrast, 0, 200, (v) => _setEditorState(editorState.copyWith(contrast: v)), suffix: '%'),
+        _buildSlider('Saturation', editorState.saturation, 0, 200, (v) => _setEditorState(editorState.copyWith(saturation: v)), suffix: '%'),
+        _buildSlider('Blur', editorState.blur, 0, 20, (v) => _setEditorState(editorState.copyWith(blur: v)), suffix: 'px'),
         const SizedBox(height: 32),
         _buildSection('DIAMOND PHYSICS'),
-        _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => setState(() => editorState = editorState.copyWith(refractionIndex: v)), decimals: 2),
-        _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => setState(() => editorState = editorState.copyWith(sparkleIntensity: v))),
-        _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => setState(() => editorState = editorState.copyWith(facetDepth: v))),
+        _buildSlider('Refraction', editorState.refractionIndex, 1.0, 3.0, (v) => _setEditorState(editorState.copyWith(refractionIndex: v)), decimals: 2),
+        _buildSlider('Sparkle', editorState.sparkleIntensity, 0, 2.0, (v) => _setEditorState(editorState.copyWith(sparkleIntensity: v))),
+        _buildSlider('Facet Depth', editorState.facetDepth, 0, 1.0, (v) => _setEditorState(editorState.copyWith(facetDepth: v))),
       ],
     );
   }
@@ -415,7 +494,7 @@ class _StudioPageState extends State<StudioPage> {
           SizedBox(width: 48),
           _StatItem(label: 'Format', value: 'PNG'),
           SizedBox(width: 48),
-          _StatItem(label: 'FPS', value: '120'),
+          _StatItem(label: 'Export', value: '3x Density'),
         ],
       ),
     );
@@ -565,7 +644,7 @@ class _PreviewCanvasState extends State<PreviewCanvas>
                       style: TextStyle(
                           color: AppColors.textPrimary, fontSize: 14)),
                   const SizedBox(height: 4),
-                  const Text('PNG, SVG, or JPG (max. 5 MB)',
+                  const Text('PNG or JPG (max. 5 MB)',
                       style: TextStyle(
                           color: AppColors.textSecondary, fontSize: 11)),
                 ],

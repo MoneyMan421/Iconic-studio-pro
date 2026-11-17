@@ -18,3 +18,13 @@ android/key.properties
 .idea/
 *.iml
 .vscode/
+
+# Archives and temporary files
+*.zip
+*.tar.gz
+*.rar
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

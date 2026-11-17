@@ -1,40 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'app_colors.dart';
-
-/// Shared email validation regex.
-final _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-
-String? _validateEmail(String? v) {
-  if (v == null || v.trim().isEmpty) return 'Email is required';
-  if (!_emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
-  return null;
-}
-
-/// Translates [FirebaseAuthException] codes to user-friendly messages.
-String _authErrorMessage(FirebaseAuthException e) {
-  switch (e.code) {
-    case 'email-already-in-use':
-      return 'An account already exists for that email.';
-    case 'invalid-email':
-      return 'That email address is not valid.';
-    case 'weak-password':
-      return 'Password must be at least 6 characters.';
-    case 'user-not-found':
-      return 'No account found for that email. Please sign up.';
-    case 'wrong-password':
-    case 'invalid-credential':
-      return 'Incorrect email or password.';
-    case 'user-disabled':
-      return 'This account has been disabled.';
-    case 'too-many-requests':
-      return 'Too many attempts. Please try again later.';
-    default:
-      return e.message ?? 'An unexpected error occurred.';
-  }
-}
-
-/// Root widget that listens to Firebase auth state and routes accordingly.
+ auth state and routes accordingly.
 class AuthGate extends StatelessWidget {
   final Widget child;
   const AuthGate({super.key, required this.child});
@@ -119,7 +83,6 @@ class _AuthScreenState extends State<AuthScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo
                   const Icon(Icons.diamond, color: AppColors.gold, size: 64),
                   const SizedBox(height: 12),
                   const Text(
@@ -140,7 +103,6 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Card
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.panel,
@@ -149,7 +111,6 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                     child: Column(
                       children: [
-                        // Tab bar
                         Container(
                           decoration: const BoxDecoration(
                             border: Border(
@@ -173,59 +134,7 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: _kTabViewHeight,
-                          child: TabBarView(
-                            controller: _tabs,
-                            children: const [
-                              _SignUpForm(),
-                              _LoginForm(),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Sign-Up Form ─────────────────────────────────────────────────────────────
-
-class _SignUpForm extends StatefulWidget {
-  const _SignUpForm();
-
-  @override
-  State<_SignUpForm> createState() => _SignUpFormState();
-}
-
-class _SignUpFormState extends State<_SignUpForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _obscurePass = true;
-  bool _obscureConfirm = true;
-  bool _loading = false;
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    _confirmCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
+ = true);
     try {
       final credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -288,9 +197,11 @@ class _SignUpFormState extends State<_SignUpForm> {
                 ),
                 onPressed: () => setState(() => _obscurePass = !_obscurePass),
               ),
-              validator: (v) => (v == null || v.length < 6)
-                  ? 'Password must be at least 6 characters'
-                  : null,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password is required';
+                if (v.length < 6) return 'Minimum 6 characters';
+                return null;
+              },
             ),
             const SizedBox(height: 14),
             _AuthField(
@@ -307,11 +218,12 @@ class _SignUpFormState extends State<_SignUpForm> {
                 onPressed: () =>
                     setState(() => _obscureConfirm = !_obscureConfirm),
               ),
-              validator: (v) => v != _passCtrl.text
-                  ? 'Passwords do not match'
-                  : null,
+              validator: (v) {
+                if (v != _passCtrl.text) return 'Passwords do not match';
+                return null;
+              },
             ),
-            const Spacer(),
+            const SizedBox(height: 24),
             _GoldButton(
               label: 'Create Account',
               loading: _loading,
@@ -336,83 +248,7 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _obscurePass = true;
-  bool _loading = false;
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailCtrl.text.trim().toLowerCase(),
-        password: _passCtrl.text,
-      );
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_authErrorMessage(e))),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 8),
-            _AuthField(
-              controller: _emailCtrl,
-              label: 'Email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: _validateEmail,
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _passCtrl,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscurePass,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePass ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscurePass = !_obscurePass),
-              ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
-            ),
-            const Spacer(),
-            _GoldButton(
-              label: 'Log In',
-              loading: _loading,
-              onPressed: _submit,
-            ),
-          ],
+  final 
         ),
       ),
     );
@@ -425,18 +261,18 @@ class _AuthField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
+  final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
-  final TextInputType? keyboardType;
   final String? Function(String?)? validator;
 
   const _AuthField({
     required this.controller,
     required this.label,
     required this.icon,
+    this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
-    this.keyboardType,
     this.validator,
   });
 
@@ -444,37 +280,33 @@ class _AuthField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      obscureText: obscureText,
       keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: const TextStyle(color: AppColors.textPrimary),
       validator: validator,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        labelStyle: const TextStyle(color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: AppColors.uploadZone,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: AppColors.background,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.panelBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.gold, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.gold),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent),
         ),
-        errorStyle: const TextStyle(fontSize: 11),
       ),
     );
   }
@@ -500,7 +332,6 @@ class _GoldButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
           foregroundColor: Colors.black,
-          disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -509,17 +340,10 @@ class _GoldButton extends StatelessWidget {
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                  color: Colors.black,
-                  strokeWidth: 2.5,
-                ),
+                    strokeWidth: 2, color: Colors.black),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
+            : Text(label,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
