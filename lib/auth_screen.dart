@@ -1,128 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
-import 'app_colors.dart';
-
-/// Shared email validation regex.
-final _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-
-String? _validateEmail(String? v) {
-  if (v == null || v.trim().isEmpty) return 'Email is required';
-  if (!_emailRegex.hasMatch(v.trim())) return 'Enter a valid email';
-  return null;
-}
-
-String _hashPassword(String password) {
-  final bytes = utf8.encode(password);
-  return sha256.convert(bytes).toString();
-}
-
-/// Simple in-app auth state. Persists login across restarts via SharedPreferences.
-class AuthState extends ChangeNotifier {
-  bool _isLoggedIn = false;
-  String _displayName = '';
-
-  bool get isLoggedIn => _isLoggedIn;
-  String get displayName => _displayName;
-
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    _displayName = prefs.getString('displayName') ?? '';
-    notifyListeners();
-  }
-
-  Future<void> signUp({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final existingEmail = prefs.getString('userEmail') ?? '';
-    if (existingEmail.isNotEmpty && existingEmail != email) {
-      throw Exception('An account already exists. Please log in instead.');
-    }
-    final hashed = _hashPassword(password);
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('displayName', name);
-    await prefs.setString('userEmail', email.toLowerCase().trim());
-    await prefs.setString('userPasswordHash', hashed);
-    _isLoggedIn = true;
-    _displayName = name;
-    notifyListeners();
-  }
-
-  Future<void> login({required String email, required String password}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedEmail = prefs.getString('userEmail') ?? '';
-    final storedHash = prefs.getString('userPasswordHash') ?? '';
-
-    if (storedEmail.isEmpty) {
-      throw Exception('No account found. Please sign up first.');
-    }
-    if (storedEmail != email.toLowerCase().trim()) {
-      throw Exception('No account found for that email.');
-    }
-    if (storedHash.isEmpty) {
-      throw Exception('Stored credentials are invalid. Please sign up again.');
-    }
-    if (storedHash != _hashPassword(password)) {
-      throw Exception('Incorrect password.');
-    }
-
-    final storedName = prefs.getString('displayName') ?? email.split('@').first;
-    await prefs.setBool('isLoggedIn', true);
-    _isLoggedIn = true;
-    _displayName = storedName;
-    notifyListeners();
-  }
-
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    _isLoggedIn = false;
-    notifyListeners();
-  }
-}
-
-/// Root widget that resolves auth state and routes to the correct screen.
-class AuthGate extends StatefulWidget {
+ auth state and routes accordingly.
+class AuthGate extends StatelessWidget {
   final Widget child;
   const AuthGate({super.key, required this.child});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  final AuthState _auth = AuthState();
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _auth.addListener(_onAuthChanged);
-    _auth.load().whenComplete(() => setState(() => _loading = false));
-  }
-
-  @override
-  void dispose() {
-    _auth.removeListener(_onAuthChanged);
-    super.dispose();
-  }
-
-  void _onAuthChanged() => setState(() {});
-
-  @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const _SplashScreen();
-    }
-    if (_auth.isLoggedIn) {
-      return widget.child;
-    }
-    return AuthScreen(auth: _auth);
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _SplashScreen();
+        }
+        if (snapshot.hasData) {
+          return child;
+        }
+        return const AuthScreen();
+      },
+    );
   }
 }
 
@@ -151,9 +45,10 @@ class _SplashScreen extends StatelessWidget {
 
 // ─── Auth Screen ─────────────────────────────────────────────────────────────
 
+const double _kTabViewHeight = 380;
+
 class AuthScreen extends StatefulWidget {
-  final AuthState auth;
-  const AuthScreen({super.key, required this.auth});
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -239,66 +134,20 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                         SizedBox(
-                          height: 380,
-                          child: TabBarView(
-                            controller: _tabs,
-                            children: [
-                              _SignUpForm(auth: widget.auth),
-                              _LoginForm(auth: widget.auth),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Sign-Up Form ─────────────────────────────────────────────────────────────
-
-class _SignUpForm extends StatefulWidget {
-  final AuthState auth;
-  const _SignUpForm({required this.auth});
-
-  @override
-  State<_SignUpForm> createState() => _SignUpFormState();
-}
-
-class _SignUpFormState extends State<_SignUpForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _obscurePass = true;
-  bool _obscureConfirm = true;
-  bool _loading = false;
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    _confirmCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
+ = true);
     try {
-      await widget.auth.signUp(
-        name: _nameCtrl.text.trim(),
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailCtrl.text.trim().toLowerCase(),
         password: _passCtrl.text,
       );
+      await credential.user?.updateDisplayName(_nameCtrl.text.trim());
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_authErrorMessage(e))),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -390,8 +239,7 @@ class _SignUpFormState extends State<_SignUpForm> {
 // ─── Login Form ───────────────────────────────────────────────────────────────
 
 class _LoginForm extends StatefulWidget {
-  final AuthState auth;
-  const _LoginForm({required this.auth});
+  const _LoginForm();
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -400,76 +248,7 @@ class _LoginForm extends StatefulWidget {
 class _LoginFormState extends State<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _obscure = true;
-  bool _loading = false;
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _loading = true);
-    try {
-      await widget.auth.login(
-        email: _emailCtrl.text.trim().toLowerCase(),
-        password: _passCtrl.text,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _AuthField(
-              controller: _emailCtrl,
-              label: 'Email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: _validateEmail,
-            ),
-            const SizedBox(height: 14),
-            _AuthField(
-              controller: _passCtrl,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscureText: _obscure,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscure ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscure = !_obscure),
-              ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
-            ),
-            const SizedBox(height: 24),
-            _GoldButton(
-              label: 'Log In',
-              loading: _loading,
-              onPressed: _submit,
-            ),
-          ],
+  final 
         ),
       ),
     );
