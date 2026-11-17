@@ -412,7 +412,6 @@ class _IconEditorSheetState extends State<IconEditorSheet> {
   late EditorState editorState;
   final _nameCtrl = TextEditingController();
   bool _saving = false;
-  final GlobalKey _previewKey = GlobalKey();
 
   @override
   void initState() {

@@ -16,10 +16,10 @@ dependencies:
   crypto: ^3.0.3
   flutter_svg: ^2.0.10+1
   # Firebase
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.20.0
-  cloud_firestore: ^4.17.5
-  firebase_storage: ^11.7.7
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.7.0
+  cloud_firestore: ^5.6.12
+  firebase_storage: ^12.4.10
   # Shared prefs (keep for local editor state)
   shared_preferences: ^2.2.3
   # Web-only - modern dart:html replacement
