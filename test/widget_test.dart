@@ -17,7 +17,7 @@ void main() {
 
     testWidgets('renders key studio UI', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: const main_lib.StudioPage()),
+        const MaterialApp(home: main_lib.StudioPage()),
       );
       await tester.pump();
 
@@ -47,7 +47,7 @@ void main() {
 
     testWidgets('export button is present and tappable', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: const main_lib.StudioPage()),
+        const MaterialApp(home: main_lib.StudioPage()),
       );
       await tester.pump();
 
@@ -66,7 +66,7 @@ void main() {
           home: Scaffold(
             body: ShaderBuilder(
               assetKey: 'shaders/diamond_master.frag',
-              (context, shader, child) => SizedBox.shrink(),
+              (context, shader, child) => const SizedBox.shrink(),
             ),
           ),
         ),
@@ -78,7 +78,7 @@ void main() {
 
   group('Color API withValues guard', () {
     test('withValues preserves rgb and updates alpha', () {
-      final source = AppColors.gold;
+      const source = AppColors.gold;
       final updated = source.withValues(alpha: 0.2);
 
       expect(updated.r, source.r);
