@@ -17,7 +17,7 @@ void main() {
 
     testWidgets('renders key studio UI', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: const StudioPage()),
+        MaterialApp(home: const main_lib.StudioPage()),
       );
       await tester.pump();
 
@@ -28,7 +28,7 @@ void main() {
 
   group('EditorState immutability + copyWith', () {
     test('copyWith returns updated copy without mutating original', () {
-      final original = EditorState(scale: 60, rotation: 10, brightness: 100);
+      final original = main_lib.EditorState(scale: 60, rotation: 10, brightness: 100);
       final updated = original.copyWith(scale: 72, contrast: 140);
 
       expect(updated, isNot(same(original)));
@@ -47,7 +47,7 @@ void main() {
 
     testWidgets('export button is present and tappable', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: const StudioPage()),
+        MaterialApp(home: const main_lib.StudioPage()),
       );
       await tester.pump();
 
